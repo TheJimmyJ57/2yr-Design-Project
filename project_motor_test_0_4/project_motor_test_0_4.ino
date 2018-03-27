@@ -64,10 +64,10 @@ unsigned long ul_S_Echo_Time;
 unsigned int ui_Motors_Speed = 1900;        // Default run speed
 unsigned int ui_Left_Motor_Speed = 1500;
 unsigned int ui_Right_Motor_Speed = 1500;
-int ClawOpen = 180;
+int ClawOpen = 140;
 int ClawClosed = 0;
-int ClawSwivelOpen = 180;
-int ClawSWivelClosed = 0;
+int ClawSwivelOpen = 45;
+int ClawSwivelClosed = 175;
 long l_Left_Motor_Position;
 long l_Right_Motor_Position;
 
@@ -105,7 +105,7 @@ boolean bt_Cal_Initialized = false;
 bool ON = false;
 unsigned int onTimer = 0;
 unsigned int onTimerDelay = 1000;
-int MODE = 2;
+int MODE = 0;
 ////////////// HEARTBEAT TIMER VARIABLES/////////////////////////////////////////////////////////////////////////////////////
 unsigned int heartbeatTimer = 0;
 int heartbeatDelay = 0;
@@ -147,7 +147,7 @@ void setup() {
   pinMode(ci_LED, OUTPUT);
 
   //setup contact switch
-  pinMode(ci_ContactSwitch, INPUT);
+  pinMode(ci_ContactSwitch, INPUT_PULLUP);
 
   // read saved values from EEPROM
   b_LowByte = EEPROM.read(ci_Left_Motor_Offset_Address_L);
@@ -156,8 +156,8 @@ void setup() {
   b_LowByte = EEPROM.read(ci_Right_Motor_Offset_Address_L);
   b_HighByte = EEPROM.read(ci_Right_Motor_Offset_Address_H);
   ui_Right_Motor_Offset = word(b_HighByte, b_LowByte);
-  servo_Claw.write(180);
-  servo_ClawSwivel.write(180);
+  servo_Claw.write(ClawOpen);
+  servo_ClawSwivel.write(ClawSwivelOpen);
 
   //digitalWrite(ci_LED,HIGH);
 
@@ -179,26 +179,25 @@ void loop()
     //HeartBeat(20);
 
     switch (MODE) {
-      case 0: { // case0 arm movement
-          if (Delay(3000, false) == true) {
-            servo_Claw.write(180); // claw open
-          }
-          if (Delay(1000, false) == true) {
-            servo_Claw.write(0); // claw close
-          }
-          if (Delay(1500, false) == true) {
-            servo_ClawSwivel.write(45); // arm swivel in
-          }
-          if (Delay(800, false) == true) {
-            servo_Claw.write(180); // claw open
-          }
+      case 0: {
+
+      if(digitalRead(A0) == LOW) {
+          servo_Claw.write(ClawClosed);
+      }
+      else if(digitalRead(A0) == HIGH) {
+        servo_Claw.write(ClawOpen);
+      }
+     /*
           if (Delay(3000, false) == true) {
             servo_ClawSwivel.write(180); //arm swivel out
           }
           if (Delay(50, true) == true) { // this one just resets the timers and such, hense last == true
             // end of loop
             ModeSet(1);
-          }
+            
+          } */
+          Serial.print(A0);
+          Serial.println();
           break;
         }
       case 1: {
@@ -395,7 +394,7 @@ void Ping( bool which)
   Serial.print(", Inches: ");
   Serial.print(ul_Echo_Time / 148); //divide time by 148 to get distance in inches
   Serial.print(", cm: ");
-  Serial.println(ul_Echo_Time / 58); //divide time by 58 to get distance in cm
+  Serial.println(ul_Echo_Time / 58); //divide time by 58 to get distance in cm 
   //#endif
 }
 
