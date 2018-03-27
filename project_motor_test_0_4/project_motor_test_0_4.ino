@@ -37,8 +37,7 @@ const int ci_Claw = 10;
 const int ci_Claw_Swivel = 11;
 const int ci_Winch = 12;
 const int ci_LED = 13;
-const int ci_I2C_SDA = A4;         // I2C data = white
-const int ci_I2C_SCL = A5;         // I2C clock = yellow
+const int ci_ContactSwitch = A0;
 
 //constants
 
@@ -65,6 +64,10 @@ unsigned long ul_S_Echo_Time;
 unsigned int ui_Motors_Speed = 1900;        // Default run speed
 unsigned int ui_Left_Motor_Speed = 1500;
 unsigned int ui_Right_Motor_Speed = 1500;
+int ClawOpen = 180;
+int ClawClosed = 0;
+int ClawSwivelOpen = 180;
+int ClawSWivelClosed = 0;
 long l_Left_Motor_Position;
 long l_Right_Motor_Position;
 
@@ -73,6 +76,7 @@ unsigned long ul_Display_Time;
 unsigned long ul_Calibration_Time;
 unsigned long ui_Left_Motor_Offset;
 unsigned long ui_Right_Motor_Offset;
+
 
 unsigned int ui_Cal_Count;
 unsigned int ui_Cal_Cycle;
@@ -141,6 +145,9 @@ void setup() {
   // setup button
   pinMode(ci_Mode_Button, INPUT_PULLUP);
   pinMode(ci_LED, OUTPUT);
+
+  //setup contact switch
+  pinMode(ci_ContactSwitch, INPUT);
 
   // read saved values from EEPROM
   b_LowByte = EEPROM.read(ci_Left_Motor_Offset_Address_L);
