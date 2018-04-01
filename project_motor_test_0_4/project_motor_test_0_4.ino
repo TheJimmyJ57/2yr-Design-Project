@@ -1,4 +1,4 @@
-/*
+/* HELLO
 
   MSE 2202 test code 1
   Language: Arduino
@@ -25,19 +25,22 @@ Servo servo_ClawSwivel;
 
 
 //port pin constants
-const int ci_S_Ultrasonic_Ping = 2;   //input plug
-const int ci_S_Ultrasonic_Data = 3;
-const int ci_F_Ultrasonic_Ping = 4;   //input plug
-const int ci_F_Ultrasonic_Data = 5;
+const int ci_ContactSwitch = 2;
+const int ci_F_Ultrasonic_Ping = 4;   //output plug
+const int ci_F_Ultrasonic_Data = 5;   //input plug
+const int ci_Winch = 6;
 const int ci_Arm_Motor = 7;
-const int ci_Mode_Button = 6;
 const int ci_Right_Motor = 8;
 const int ci_Left_Motor = 9;
 const int ci_Claw = 10;
 const int ci_Claw_Swivel = 11;
-const int ci_Winch = 12;
+const int ci_Mode_Button = 12;
 const int ci_LED = 13;
-const int ci_ContactSwitch = A0;
+const int ci_S2_Ultrasonic_Ping = A1;   //output plug
+const int ci_S2_Ultrasonic_Data = A2;
+const int ci_S1_Ultrasonic_Ping = A3;   //output plug
+const int ci_S1_Ultrasonic_Data = A4;   //input plug
+
 
 //constants
 
@@ -60,23 +63,23 @@ const int ci_Motor_Calibration_Time = 5000;
 byte b_LowByte;
 byte b_HighByte;
 unsigned long ul_F_Echo_Time;
-unsigned long ul_S_Echo_Time;
 unsigned int ui_Motors_Speed = 1900;        // Default run speed
 unsigned int ui_Left_Motor_Speed = 1500;
 unsigned int ui_Right_Motor_Speed = 1500;
-int ClawOpen = 140;
-int ClawClosed = 0;
-int ClawSwivelOpen = 45;
-int ClawSwivelClosed = 175;
 long l_Left_Motor_Position;
 long l_Right_Motor_Position;
+long ul_S1_Echo_Time;
+long ul_S2_Echo_Time;
+int diff;
+int distToSide1;
+int distToSide2;
+int distToFront;
 
 unsigned long ul_3_Second_timer = 0;
 unsigned long ul_Display_Time;
 unsigned long ul_Calibration_Time;
 unsigned long ui_Left_Motor_Offset;
 unsigned long ui_Right_Motor_Offset;
-
 
 unsigned int ui_Cal_Count;
 unsigned int ui_Cal_Cycle;
@@ -112,15 +115,35 @@ int heartbeatDelay = 0;
 ////////////// ACTION TIMER VARIABLES/////////////////////////////////////////////////////////////////////////////////////
 unsigned int actionTimer = 0;
 int actionDelay = 0;
+///////////// ALIGNMENT VARIABLES ////////////////////////////////////////////////////////////////////////
+int alignTolerance = 1;
+int spinTolerance = 3;
+int distFromFrontWall = 15;
+int distFromSideWall = 11;
+int lastAction = 0; // 0 = straight, 1 = right, 2 = left
+int sideDelta = 0;
+///////////// SERVO VARIABLES ///////////////////////////////////////
+int ClawOpen = 140;
+int ClawClosed = 0;
+int ClawSwivelOpen = 175;
+int ClawSwivelClosed = 45;
+bool ClawUp = true;
+bool ClawSwivelUp = true;
+bool ArmUp = true;
+bool WinchUp = true;
 
+void GrabCube();
 
 void setup() {
   Wire.begin();        // Wire library required for I2CEncoder library
   Serial.begin(9600);
 
   // set up side ultrasonic
-  pinMode(ci_S_Ultrasonic_Ping, OUTPUT);
-  pinMode(ci_S_Ultrasonic_Data, INPUT);
+  pinMode(ci_S1_Ultrasonic_Ping, OUTPUT);
+  pinMode(ci_S1_Ultrasonic_Data, INPUT);
+
+  pinMode(ci_S2_Ultrasonic_Ping, OUTPUT);
+  pinMode(ci_S2_Ultrasonic_Data, INPUT);
 
   //set up front ultrasonic
   pinMode(ci_F_Ultrasonic_Ping, OUTPUT);
@@ -156,245 +179,305 @@ void setup() {
   b_LowByte = EEPROM.read(ci_Right_Motor_Offset_Address_L);
   b_HighByte = EEPROM.read(ci_Right_Motor_Offset_Address_H);
   ui_Right_Motor_Offset = word(b_HighByte, b_LowByte);
-  servo_Claw.write(ClawOpen);
-  servo_ClawSwivel.write(ClawSwivelOpen);
 
   //digitalWrite(ci_LED,HIGH);
+  ui_Left_Motor_Speed = 1650;
+  ui_Right_Motor_Speed = 1650;
 
+  clawUp(true);
+  clawSwivelUp(true);
 }
 
 void loop()
 {
-  OnOffButton();
-
-  if (ON == false) {
-    HeartBeat(120);
-    servo_Claw.write(0); // claw open
-    servo_ClawSwivel.write(45); // arm swivel in
-    servo_LeftMotor.writeMicroseconds(1500);
-    servo_RightMotor.writeMicroseconds(1500);
-  }
-  if (ON == true) {
-
-    //HeartBeat(20);
-
-    switch (MODE) {
-      case 0: {
-
-      if(digitalRead(A0) == LOW) {
-          servo_Claw.write(ClawClosed);
+  digitalWrite(13, HIGH);
+  switch (MODE) {
+    case 0:                 //mode to find wall
+      {
+        Ping();
+        if ((distToFront < 25) || (distToSide1 < 25)) //check to see if the side or front are close to a wall
+        {
+          halt();
+          MODE = 1;
+        }
+        else          //drive forward until the robot is close to a wall
+        {
+          driveStraight();
+        }
+        break;
       }
-      else if(digitalRead(A0) == HIGH) {
-        servo_Claw.write(ClawOpen);
+    case 1:               //mode to align robots side with wall
+      {
+        Ping();              //get new distance values
+        spinLeft();
+        while(!inTolerance(distToSide1, distToSide2))
+        {
+          Ping();
+        }
+        halt();
+        delay(1000);
+        MODE = 2;
+        /*if ((distToSide2 < 15) && (distToSide1 < 15))    //spin left until the robot aligns itself with the wall
+        {
+          halt();
+          delay(1000);
+          MODE = 2;
+        }*/
+        break;
       }
-     /*
-          if (Delay(3000, false) == true) {
-            servo_ClawSwivel.write(180); //arm swivel out
-          }
-          if (Delay(50, true) == true) { // this one just resets the timers and such, hense last == true
-            // end of loop
-            ModeSet(1);
-            
-          } */
-          Serial.print(A0);
-          Serial.println();
-          break;
+    case 2:                              // follow wall
+      {
+        Ping();
+        
+        if (diff < -alignTolerance)         //see if back sensor is too far from wall and readjust
+        {
+          driveLeft();
         }
-      case 1: {
-          servo_Claw.write(180); // claw open
-          servo_ClawSwivel.write(45); // arm swivel in
-
-          if (Delay(2000, false) == true) {
-            ui_Right_Motor_Speed = 1600;
-            ui_Left_Motor_Speed = 1600;
-          }
-          if (Delay(2000, false) == true) {
-            ui_Right_Motor_Speed = 1400;
-            ui_Left_Motor_Speed = 1600;
-          }
-
-          if (Delay(50, true) == true) { // this one just resets the timers and such, hense last == true
-            // end of loop
-            ModeSet(0);
-          }
-          break;
+        else if (diff > alignTolerance)
+        {
+          driveRight();
         }
-      case 2: { // wall Following (A)
-          servo_Claw.write(0 ); // claw open
-          servo_ClawSwivel.write(45); // arm swivel in
-
-          ui_Right_Motor_Speed = 1650;
-          ui_Left_Motor_Speed = 1650;
-
-          Ping(1);
-          if (((ul_F_Echo_Time / 148) < 8) && ((ul_F_Echo_Time / 148) > 0)) {
-            ModeSet(3);
-          }
-          break;
+        else if (distToFront < 20)     //else if the robot needs to turn because a wall is close ahead
+        {
+          MODE = 3;
         }
-      case 3: { // wall Following (B)
-          Ping(1);
-
-          if (Delay(700, false) == true) { // 700 > 800
-            ui_Left_Motor_Speed = 1350;
-            ui_Right_Motor_Speed = 1650;
-          }
-          if (Delay(1000, false) == true) {
-            Ping(0); //if not working, replace with turning off the motors
-            if (((ul_S_Echo_Time / 148) < 8) && ((ul_S_Echo_Time / 148) > 0)) {
-              ModeSet(2);
-            }
-          }
-
-          if (Delay(50, false) == true) { // this one just resets the timers and such, hense last == true
-            ModeSet(2);
-          }
-
-          if (Delay(50, true) == true) { // this one just resets the timers and such, hense last == true
-          }
-          break;
+        else if ((diff > -2) && (diff < 2))         //if difference is within tolerance
+        {
+          driveStraight();
         }
-    }
+        break;
+      }
+    case 3:                                 //begin turning robot
+      {
+        ui_Left_Motor_Speed = 1500;
+        ui_Right_Motor_Speed = 1500;
+        servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);         //halt
+        servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
+        delay(1000);                                                    //delay to visually see its about to turn
+        ui_Left_Motor_Speed = 1380;
+        ui_Right_Motor_Speed = 1620;
+        servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);             //write speeds for turning
+        servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
+        delay(1250);                                                          //delay so robot can begin turning before considering whether it is aligned with wall after turn
+        MODE = 1;
+        break;
+      }
+    case 4:                                                                         //if cube has tripped contact switch
+      {
+        GrabCube();
+        MODE = 5;
+        break;
+      }
+    case 5:                                                                           //pyramid finding
+      {
+        //hi
+        break;
+      }
 
-    servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
-    servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
   }
+
+  //  Alingwheel();
+  servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
+  servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
+  Serial.println(MODE);
 }
 
-void HeartBeat(int beatSpeed) { //  LED heart beat control . example of using the HHdelay funtion.
-
-  if (HDelay(3 * beatSpeed, false) == true) {
-    digitalWrite(ci_LED, LOW);
-  }
-  if (HDelay(1 * beatSpeed, false) == true) {
-    digitalWrite(ci_LED, HIGH);
-  }
-  if (HDelay(1 * beatSpeed, false) == true) {
-    digitalWrite(ci_LED, LOW);
-  }
-  if (HDelay(1 * beatSpeed, false) == true) {
-    digitalWrite(ci_LED, HIGH);
-  }
-  if (HDelay(50, true) == true) { // this one just resets the timers and such, hense last == true
-    // end of loop
-  }
-
+void GrabCube()
+{
+  servo_Claw.write(ClawClosed);
+  servo_LeftMotor.writeMicroseconds(1500);
+  servo_RightMotor.writeMicroseconds(1500);
+  delay(2000);
+  servo_ClawSwivel.write(ClawSwivelClosed);
+  delay (2000);
+  Serial.print("DONE");
 }
 
-// Hdelay basically acts as a delay: it will do whatever is in the if statment for the indicated time.
-
-unsigned int HDelay(int milisec, bool last) {
-  heartbeatDelay += milisec;
-
-  if (last == false) {
-    if (((heartbeatTimer + heartbeatDelay - milisec) < millis() ) && ((heartbeatTimer + heartbeatDelay ) >= millis() )) {
-      return true;
-    }
-    else
-    {
-      return false;
-    }
-  }
-
-
-  if (last == true) {
-    if ((heartbeatTimer + heartbeatDelay ) <=  millis()) {
-      heartbeatTimer = millis();
-      heartbeatDelay = 0;
-      return true;
-    }
-    else
-    {
-      heartbeatDelay = 0;
-      return false;
-    }
-  }
+void driveStraight()
+{
+  lastAction = 0;
+  ui_Left_Motor_Speed = 1650;
+  ui_Right_Motor_Speed = 1650;
 }
 
-unsigned int Delay(int milisec, bool last) { // Delay basically acts as a delay: it will do whatever is in the if statment for the indicated time. but it controls everything that isnt the heart beat.
-  actionDelay += milisec;
-  if (last == false) {
-
-    if (((actionTimer + actionDelay - milisec) < millis() ) && ((actionTimer + actionDelay ) >= millis() )) {
-      return true;
-    }
-    else
-    {
-      return false;
-    }
-  }
-
-
-  if (last == true) {
-    if ((actionTimer + actionDelay ) <=  millis()) {
-      actionTimer = millis();
-      actionDelay = 0;
-      return true;
-    }
-    else
-    {
-      actionDelay = 0;
-      return false;
-    }
-  }
+void driveRight()
+{
+  lastAction = 1;
+  ui_Left_Motor_Speed = 1620;
+  ui_Right_Motor_Speed = 1600;
 }
 
+void driveLeft()
+{
+  lastAction = 2;
+  ui_Left_Motor_Speed = 1600;
+  ui_Right_Motor_Speed = 1620;
+}
 
-void ModeSet(int mode) { // this is used to transition between modes. it resets timers, and returns the motors to stopped.
-  MODE = mode;
-  actionTimer = millis();
-  actionDelay = 0;
+void spinRight()
+{
+  ui_Left_Motor_Speed = 1560;
+  ui_Right_Motor_Speed = 1440;
+}
+
+void spinLeft()
+{
+  ui_Left_Motor_Speed = 1440;
+  ui_Right_Motor_Speed = 1560;
+}
+
+void halt()
+{
   ui_Left_Motor_Speed = 1500;
   ui_Right_Motor_Speed = 1500;
+  servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
+  servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
 }
 
-void OnOffButton() { // code for toggling the on/off variable
-  if (digitalRead(ci_Mode_Button) == HIGH) { // restarting timer if LED flickers
-    onTimer = millis();
-    onTimerDelay = 1000; // resetting delay
-  }
-
-  if ((onTimer + onTimerDelay) < millis()) { // holding down button for the length of the delay
-
-    ModeSet(MODE); // resetting timers and such.
-
-    if (ON == true) // toggling ON
-      ON = false;
-    else
-      ON = true;
-
-    onTimer = millis(); // resetting timer
-    onTimerDelay = 90000; // increasing delay so it doesnt trigger again
-  }
-}
-
-void Ping( bool which)
+void Ping()
 {
-  int ul_Echo_Time;
-  if (which == 1) { // front
+  // front side
 
-    digitalWrite(ci_F_Ultrasonic_Ping, HIGH);
-    delayMicroseconds(10);  //The 10 microsecond pause where the pulse in "high"
-    digitalWrite(ci_F_Ultrasonic_Ping, LOW);
-    ul_F_Echo_Time = pulseIn(ci_F_Ultrasonic_Data, HIGH, 10000);
-    ul_Echo_Time = ul_F_Echo_Time;
-  }
-  if (which == 0) { // side
+  digitalWrite(ci_S1_Ultrasonic_Ping, HIGH);
+  delayMicroseconds(10);  //The 10 microsecond pause where the pulse in "high"
+  digitalWrite(ci_S1_Ultrasonic_Ping, LOW);
+  ul_S1_Echo_Time = pulseIn(ci_S1_Ultrasonic_Data, HIGH, 10000);
 
-    digitalWrite(ci_S_Ultrasonic_Ping, HIGH);
-    delayMicroseconds(10);  //The 10 microsecond pause where the pulse in "high"
-    digitalWrite(ci_S_Ultrasonic_Ping, LOW);
-    ul_S_Echo_Time = pulseIn(ci_S_Ultrasonic_Data, HIGH, 10000);
-    ul_Echo_Time = ul_S_Echo_Time;
+  // back side
+
+  digitalWrite(ci_S2_Ultrasonic_Ping, HIGH);
+  delayMicroseconds(10);  //The 10 microsecond pause where the pulse in "high"
+  digitalWrite(ci_S2_Ultrasonic_Ping, LOW);
+  ul_S2_Echo_Time = pulseIn(ci_S2_Ultrasonic_Data, HIGH, 10000);
+
+  digitalWrite(ci_F_Ultrasonic_Ping, HIGH);
+  delayMicroseconds(10);  //The 10 microsecond pause where the pulse in "high"
+  digitalWrite(ci_F_Ultrasonic_Ping, LOW);
+  ul_F_Echo_Time = pulseIn(ci_F_Ultrasonic_Data, HIGH, 10000);
+
+  distToSide1 = ul_S1_Echo_Time / 58;
+  if (distToSide1 == 0)
+  {
+    distToSide1 = 9999;
   }
+  distToSide2 = ul_S2_Echo_Time / 58;
+  if (distToSide2 == 0)
+  {
+    distToSide2 = 999;
+  }
+  distToFront = ul_F_Echo_Time / 58;
+  if (distToFront == 0)
+  {
+    distToFront = 999;
+  }
+  diff = distToSide1 - distToSide2; //0 = parallel, +pos = back is closer, -neg = front is closer
+
   // Print Sensor Readings
   //#ifdef DEBUG_ULTRASONIC
-  Serial.print("Time (microseconds): ");
-  Serial.print(ul_Echo_Time, DEC);
-  Serial.print(", Inches: ");
-  Serial.print(ul_Echo_Time / 148); //divide time by 148 to get distance in inches
-  Serial.print(", cm: ");
-  Serial.println(ul_Echo_Time / 58); //divide time by 58 to get distance in cm 
+  if (MODE == 0) {
+    Serial.print("S1Time (microseconds): ");
+    Serial.print(ul_S1_Echo_Time, DEC);
+    Serial.print(", cm: ");
+    Serial.println(ul_S1_Echo_Time / 58); //divide time by 58 to get distance in cm
+
+    Serial.print("S2Time (microseconds): ");
+    Serial.print(ul_S2_Echo_Time, DEC);
+    Serial.print(", cm: ");
+    Serial.println(ul_S2_Echo_Time / 58); //divide time by 58 to get distance in cm
+
+    Serial.print("F()Time (microseconds): ");
+    Serial.print(ul_F_Echo_Time, DEC);
+    Serial.print(", cm: ");
+    Serial.println(ul_F_Echo_Time / 58); //divide time by 58 to get distance in cm
+  }
   //#endif
+
 }
+
+bool inTolerance(int num1, int num2)
+{
+  if (abs(num1 - num2) < 2*alignTolerance)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+
+void rampUp(bool Up)
+{
+  if (Up == true)
+  {
+    if(WinchUp == false)
+    {
+      servo_Winch.writeMicroseconds(1600);
+      delay(400);
+      servo_Winch.writeMicroseconds(1500);
+      WinchUp = true;
+    }
+  }
+  else
+  {
+    if (WinchUp == true)
+    {
+      servo_Winch.writeMicroseconds(1400);
+      delay(400);
+      servo_Winch.writeMicroseconds(1500);
+      WinchUp = false;
+    }
+  }
+}
+
+void clawUp(bool Up)
+{
+  if (Up == true)
+  {
+    servo_Claw.write(ClawClosed);
+  }
+  else
+  {
+    servo_Claw.write(ClawOpen);
+  }
+}
+
+void clawSwivelUp(bool Up)
+{
+  if (Up == true)
+  {
+    servo_ClawSwivel.write(ClawSwivelClosed);
+  }
+  else
+  {
+    servo_ClawSwivel.write(ClawSwivelOpen);
+  }
+}
+
+void armUp(bool Up)
+{
+  if (Up == true)
+  {
+    if(ArmUp == false)
+    {
+      servo_ArmMotor.writeMicroseconds(1300);
+      delay(2800);
+      servo_ArmMotor.writeMicroseconds(1500);
+      ArmUp = true;
+    }
+  }
+  else
+  {
+    if (ArmUp == true)
+    {
+      servo_ArmMotor.writeMicroseconds(1700);
+      delay(2800);
+      servo_ArmMotor.writeMicroseconds(1500);
+      ArmUp = false;
+    }
+  }
+}
+
+
 
