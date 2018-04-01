@@ -25,8 +25,7 @@ Servo servo_ClawSwivel;
 
 
 //port pin constants
-const int ci_S1_Ultrasonic_Ping = 2;   //output plug
-const int ci_S1_Ultrasonic_Data = 3;   //input plug
+const int ci_ContactSwitch = 2;
 const int ci_F_Ultrasonic_Ping = 4;   //output plug
 const int ci_F_Ultrasonic_Data = 5;   //input plug
 const int ci_Winch = 6;
@@ -37,11 +36,11 @@ const int ci_Claw = 10;
 const int ci_Claw_Swivel = 11;
 const int ci_Mode_Button = 12;
 const int ci_LED = 13;
-const int ci_ContactSwitch = A0;
 const int ci_S2_Ultrasonic_Ping = A1;   //output plug
 const int ci_S2_Ultrasonic_Data = A2;
-const int ci_I2C_SDA = A4;         // I2C data = white
-const int ci_I2C_SCL = A5;         // I2C clock = yellow
+const int ci_S1_Ultrasonic_Ping = A3;   //output plug
+const int ci_S1_Ultrasonic_Data = A4;   //input plug
+
 
 //constants
 
@@ -185,8 +184,8 @@ void setup() {
   ui_Left_Motor_Speed = 1650;
   ui_Right_Motor_Speed = 1650;
 
-  servo_Claw.write(ClawClosed);
-  servo_ClawSwivel.write(ClawSwivelClosed);
+  clawUp(true);
+  clawSwivelUp(true);
 }
 
 void loop()
@@ -211,7 +210,7 @@ void loop()
       {
         Ping();              //get new distance values
         spinLeft();
-        while(distToSide2 != distToSide1)
+        while(!inTolerance(distToSide1, distToSide2))
         {
           Ping();
         }
@@ -395,6 +394,19 @@ void Ping()
 
 }
 
+bool inTolerance(int num1, int num2)
+{
+  if (abs(num1 - num2) < 2*alignTolerance)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+
 void rampUp(bool Up)
 {
   if (Up == true)
@@ -449,8 +461,8 @@ void armUp(bool Up)
   {
     if(ArmUp == false)
     {
-      servo_ArmMotor.writeMicroseconds(1600);
-      delay(400);
+      servo_ArmMotor.writeMicroseconds(1300);
+      delay(2800);
       servo_ArmMotor.writeMicroseconds(1500);
       ArmUp = true;
     }
@@ -459,8 +471,8 @@ void armUp(bool Up)
   {
     if (ArmUp == true)
     {
-      servo_ArmMotor.writeMicroseconds(1400);
-      delay(400);
+      servo_ArmMotor.writeMicroseconds(1700);
+      delay(2800);
       servo_ArmMotor.writeMicroseconds(1500);
       ArmUp = false;
     }
