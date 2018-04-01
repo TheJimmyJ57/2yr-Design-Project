@@ -1,4 +1,4 @@
-/*
+/* HELLO
 
   MSE 2202 test code 1
   Language: Arduino
@@ -117,7 +117,7 @@ int heartbeatDelay = 0;
 unsigned int actionTimer = 0;
 int actionDelay = 0;
 ///////////// ALIGNMENT VARIABLES ////////////////////////////////////////////////////////////////////////
-int alignTolerance = 5;
+int alignTolerance = 4;
 int distFromFrontWall = 15;
 int distFromSideWall = 11;
 int lastAction = 0; // 0 = straight, 1 = right, 2 = left
@@ -144,7 +144,7 @@ void setup() {
 
   pinMode(ci_S2_Ultrasonic_Ping, OUTPUT);
   pinMode(ci_S2_Ultrasonic_Data, INPUT);
-  
+
   //set up front ultrasonic
   pinMode(ci_F_Ultrasonic_Ping, OUTPUT);
   pinMode(ci_F_Ultrasonic_Data, INPUT);
@@ -185,97 +185,132 @@ void setup() {
   ui_Right_Motor_Speed = 1600;
 
   servo_Claw.write(ClawClosed);
-  servo_ClawSwivel.write(ClawSwivelClosed); 
+  servo_ClawSwivel.write(ClawSwivelClosed);
 }
 
 void loop()
 {
   digitalWrite(13, HIGH);
-  switch(MODE){
+  switch (MODE) {
     case 0:                 //mode to find wall
       {
-          Ping();
-          if((distToFront < 15) || (distToSide1 < 15)) //check to see if the side or front are close to a wall
-          {
-            halt();
-            MODE = 1;
-          }
-          else          //drive forward until the robot is close to a wall
-          {
-            driveStraight();
-          }
-          break;
-      }
-    case 1:               //mode to align robots side with wall
-      {
-       Ping();              //get new distance values
-       spinLeft();          
-       if ((distToSide2 < 17) && (distToSide1 < 20))    //spin left until the robot aligns itself with the wall
-       {
-        halt();
-        delay(3000);
-        MODE = 2;
-       }
-       break; 
-      }
-     case 2:                              // follow wall
-      {
         Ping();
-    //    if (
-        if (diff < -alignTolerance)         //see if back sensor is too far from wall and readjust 
+        if ((distToFront < 25) || (distToSide1 < 25)) //check to see if the side or front are close to a wall
         {
-          spinLeft();
+          halt();
+          MODE = 1;
         }
-        else if (diff > alignTolerance)
-        {
-           spinRight();
-        }
-       else if (distToFront < 20)     //else if the robot needs to turn because a wall is close ahead
-       {
-        MODE = 3;
-       }
-        else if ((diff > -6) && (diff < 6))         //if difference is within tolerance
+        else          //drive forward until the robot is close to a wall
         {
           driveStraight();
         }
         break;
       }
-      case 3:                                 //begin turning robot
+    case 1:               //mode to align robots side with wall
+      {
+        Ping();              //get new distance values
+        spinLeft();
+        if ((distToSide2 < 20) && (distToSide1 < 20))    //spin left until the robot aligns itself with the wall
         {
-          ui_Left_Motor_Speed = 1500;
-          ui_Right_Motor_Speed = 1500;
-          servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);         //halt
-          servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
-          delay(1000);                                                    //delay to visually see its about to turn
-          ui_Left_Motor_Speed = 1380;
-          ui_Right_Motor_Speed = 1620;
-          servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);             //write speeds for turning
-          servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
-          delay(1000);                                                          //delay so robot can begin turning before considering whether it is aligned with wall after turn
-          MODE = 4;
-          break;
+          halt();
+          delay(3000);
+          MODE = 2;
         }
-      case 4:                                                                       //decide whether robot is aligned with new wall
-        {
-          if((distToSide2 < 17) && (diff < 5)) //&& (distToFront > 20))
+        break;
+      }
+    case 2:                              // follow wall
+      {
+        Ping();
+        /*  if (distToSide1 < 12)
           {
-            halt();
-            delay(3000);
-            MODE = 2;
+            Ping();
+            driveLeft();
+            servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
+            servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
           }
-          break;
-        }
-      case 5:                                                                         //if cube has tripped contact switch
+        */
+        if (diff < -alignTolerance)         //see if back sensor is too far from wall and readjust
         {
-          
-          break;
+          spinLeft();
         }
+        else if (diff > alignTolerance)
+        {
+          spinRight();
+        }
+        else if (distToFront < 20)     //else if the robot needs to turn because a wall is close ahead
+        {
+          MODE = 3;
+        }
+        else if ((diff > -5) && (diff < 5))         //if difference is within tolerance
+        {
+          driveStraight();
+        }
+        break;
+      }
+    case 3:                                 //begin turning robot
+      {
+        ui_Left_Motor_Speed = 1500;
+        ui_Right_Motor_Speed = 1500;
+        servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);         //halt
+        servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
+        delay(1000);                                                    //delay to visually see its about to turn
+        ui_Left_Motor_Speed = 1380;
+        ui_Right_Motor_Speed = 1620;
+        servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);             //write speeds for turning
+        servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
+        delay(1000);                                                          //delay so robot can begin turning before considering whether it is aligned with wall after turn
+        MODE = 1;
+        break;
+      }
+    case 4:                                                                       //decide whether robot is aligned with new wall
+      {
+        /*   if((distToSide2 < 17) && (diff < 5)) //&& (distToFront > 20))
+           {
+             halt();
+             delay(3000);
+             MODE = 2;
+           }
+           break;
+        
+        Ping();              //get new distance values
+        spinLeft();
+        if ((distToSide2 < 20) && (distToSide1 < 20))    //spin left until the robot aligns itself with the wall
+        {
+          halt();
+          delay(3000);
+          MODE = 2;
+        }
+        break;
+        */
+      }
+    case 5:                                                                         //if cube has tripped contact switch
+      {
+        GrabCube();
+        MODE = 6;
+        break;
+      }
+    case 6:                                                                           //pyramid finding
+      {
+        //hi
+      }
+
   }
-  
-//  Alingwheel();
-   servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
-   servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
-   Serial.println(MODE);
+
+  //  Alingwheel();
+  servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
+  servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
+  Serial.println(MODE);
+}
+
+void GrabCube()
+{
+  servo_Claw.write(ClawClosed);
+  servo_LeftMotor.writeMicroseconds(1500);
+  servo_RightMotor.writeMicroseconds(1500);
+  delay(2000);
+  servo_ClawSwivel.write(ClawSwivelClosed);
+  delay (2000);
+  Serial.print("DONE");
 }
 
 void driveStraight()
@@ -285,18 +320,18 @@ void driveStraight()
   ui_Right_Motor_Speed = 1650;
 }
 
-void driveLeft()
+void driveRight()
 {
   lastAction = 1;
-  ui_Left_Motor_Speed = 1650;
+  ui_Left_Motor_Speed = 1610;
   ui_Right_Motor_Speed = 1600;
 }
 
-void driveRight()
+void driveLeft()
 {
   lastAction = 2;
   ui_Left_Motor_Speed = 1600;
-  ui_Right_Motor_Speed = 1650;
+  ui_Right_Motor_Speed = 1610;
 }
 
 void spinRight()
@@ -327,7 +362,7 @@ void Ping()
   delayMicroseconds(10);  //The 10 microsecond pause where the pulse in "high"
   digitalWrite(ci_S1_Ultrasonic_Ping, LOW);
   ul_S1_Echo_Time = pulseIn(ci_S1_Ultrasonic_Data, HIGH, 10000);
-  
+
   // back side
 
   digitalWrite(ci_S2_Ultrasonic_Ping, HIGH);
@@ -340,41 +375,43 @@ void Ping()
   digitalWrite(ci_F_Ultrasonic_Ping, LOW);
   ul_F_Echo_Time = pulseIn(ci_F_Ultrasonic_Data, HIGH, 10000);
 
-  distToSide1 = ul_S1_Echo_Time/58;
+  distToSide1 = ul_S1_Echo_Time / 58;
   if (distToSide1 == 0)
   {
     distToSide1 = 9999;
   }
-  distToSide2 = ul_S2_Echo_Time/58;
-    if (distToSide2 == 0)
+  distToSide2 = ul_S2_Echo_Time / 58;
+  if (distToSide2 == 0)
   {
     distToSide2 = 999;
   }
-  distToFront = ul_F_Echo_Time/58;
-    if (distToFront == 0)
+  distToFront = ul_F_Echo_Time / 58;
+  if (distToFront == 0)
   {
     distToFront = 999;
   }
   diff = distToSide1 - distToSide2; //0 = parallel, +pos = back is closer, -neg = front is closer
-  
+
   // Print Sensor Readings
   //#ifdef DEBUG_ULTRASONIC
-/*  Serial.print("S1Time (microseconds): ");
-  Serial.print(ul_S1_Echo_Time, DEC);
-  Serial.print(", cm: ");
-  Serial.println(ul_S1_Echo_Time / 58); //divide time by 58 to get distance in cm
+  if (MODE == 0) {
+    Serial.print("S1Time (microseconds): ");
+    Serial.print(ul_S1_Echo_Time, DEC);
+    Serial.print(", cm: ");
+    Serial.println(ul_S1_Echo_Time / 58); //divide time by 58 to get distance in cm
 
-  Serial.print("S2Time (microseconds): ");
-  Serial.print(ul_S2_Echo_Time, DEC);
-  Serial.print(", cm: ");
-  Serial.println(ul_S2_Echo_Time / 58); //divide time by 58 to get distance in cm
+    Serial.print("S2Time (microseconds): ");
+    Serial.print(ul_S2_Echo_Time, DEC);
+    Serial.print(", cm: ");
+    Serial.println(ul_S2_Echo_Time / 58); //divide time by 58 to get distance in cm
 
-  Serial.print("F()Time (microseconds): ");
-  Serial.print(ul_F_Echo_Time, DEC);
-  Serial.print(", cm: ");
-  Serial.println(ul_F_Echo_Time / 58); //divide time by 58 to get distance in cm
-  //#endif 
- */
+    Serial.print("F()Time (microseconds): ");
+    Serial.print(ul_F_Echo_Time, DEC);
+    Serial.print(", cm: ");
+    Serial.println(ul_F_Echo_Time / 58); //divide time by 58 to get distance in cm
+  }
+  //#endif
+
 }
 
 
