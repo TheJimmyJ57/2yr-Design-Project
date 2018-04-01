@@ -117,7 +117,8 @@ int heartbeatDelay = 0;
 unsigned int actionTimer = 0;
 int actionDelay = 0;
 ///////////// ALIGNMENT VARIABLES ////////////////////////////////////////////////////////////////////////
-int alignTolerance = 4;
+int alignTolerance = 1;
+int spinTolerance = 3;
 int distFromFrontWall = 15;
 int distFromSideWall = 11;
 int lastAction = 0; // 0 = straight, 1 = right, 2 = left
@@ -182,7 +183,7 @@ void setup() {
 
   //digitalWrite(ci_LED,HIGH);
   ui_Left_Motor_Speed = 1650;
-  ui_Right_Motor_Speed = 1600;
+  ui_Right_Motor_Speed = 1650;
 
   servo_Claw.write(ClawClosed);
   servo_ClawSwivel.write(ClawSwivelClosed);
@@ -210,38 +211,38 @@ void loop()
       {
         Ping();              //get new distance values
         spinLeft();
-        if ((distToSide2 < 20) && (distToSide1 < 20))    //spin left until the robot aligns itself with the wall
+        while(distToSide2 != distToSide1)
+        {
+          Ping();
+        }
+        halt();
+        delay(1000);
+        MODE = 2;
+        /*if ((distToSide2 < 15) && (distToSide1 < 15))    //spin left until the robot aligns itself with the wall
         {
           halt();
-          delay(3000);
+          delay(1000);
           MODE = 2;
-        }
+        }*/
         break;
       }
     case 2:                              // follow wall
       {
         Ping();
-        /*  if (distToSide1 < 12)
-          {
-            Ping();
-            driveLeft();
-            servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
-            servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
-          }
-        */
+        
         if (diff < -alignTolerance)         //see if back sensor is too far from wall and readjust
         {
-          spinLeft();
+          driveLeft();
         }
         else if (diff > alignTolerance)
         {
-          spinRight();
+          driveRight();
         }
         else if (distToFront < 20)     //else if the robot needs to turn because a wall is close ahead
         {
           MODE = 3;
         }
-        else if ((diff > -5) && (diff < 5))         //if difference is within tolerance
+        else if ((diff > -2) && (diff < 2))         //if difference is within tolerance
         {
           driveStraight();
         }
@@ -258,40 +259,20 @@ void loop()
         ui_Right_Motor_Speed = 1620;
         servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);             //write speeds for turning
         servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
-        delay(1000);                                                          //delay so robot can begin turning before considering whether it is aligned with wall after turn
+        delay(1250);                                                          //delay so robot can begin turning before considering whether it is aligned with wall after turn
         MODE = 1;
         break;
       }
-    case 4:                                                                       //decide whether robot is aligned with new wall
-      {
-        /*   if((distToSide2 < 17) && (diff < 5)) //&& (distToFront > 20))
-           {
-             halt();
-             delay(3000);
-             MODE = 2;
-           }
-           break;
-        
-        Ping();              //get new distance values
-        spinLeft();
-        if ((distToSide2 < 20) && (distToSide1 < 20))    //spin left until the robot aligns itself with the wall
-        {
-          halt();
-          delay(3000);
-          MODE = 2;
-        }
-        break;
-        */
-      }
-    case 5:                                                                         //if cube has tripped contact switch
+    case 4:                                                                         //if cube has tripped contact switch
       {
         GrabCube();
-        MODE = 6;
+        MODE = 5;
         break;
       }
-    case 6:                                                                           //pyramid finding
+    case 5:                                                                           //pyramid finding
       {
         //hi
+        break;
       }
 
   }
@@ -323,7 +304,7 @@ void driveStraight()
 void driveRight()
 {
   lastAction = 1;
-  ui_Left_Motor_Speed = 1610;
+  ui_Left_Motor_Speed = 1620;
   ui_Right_Motor_Speed = 1600;
 }
 
@@ -331,19 +312,19 @@ void driveLeft()
 {
   lastAction = 2;
   ui_Left_Motor_Speed = 1600;
-  ui_Right_Motor_Speed = 1610;
+  ui_Right_Motor_Speed = 1620;
 }
 
 void spinRight()
 {
-  ui_Left_Motor_Speed = 1620;
-  ui_Right_Motor_Speed = 1380;
+  ui_Left_Motor_Speed = 1560;
+  ui_Right_Motor_Speed = 1440;
 }
 
 void spinLeft()
 {
-  ui_Left_Motor_Speed = 1380;
-  ui_Right_Motor_Speed = 1620;
+  ui_Left_Motor_Speed = 1440;
+  ui_Right_Motor_Speed = 1560;
 }
 
 void halt()
