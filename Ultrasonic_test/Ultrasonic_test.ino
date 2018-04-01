@@ -395,5 +395,77 @@ void Ping()
 
 }
 
+void rampUp(bool Up)
+{
+  if (Up == true)
+  {
+    if(WinchUp == false)
+    {
+      servo_Winch.writeMicroseconds(1600);
+      delay(400);
+      servo_Winch.writeMicroseconds(1500);
+      WinchUp = true;
+    }
+  }
+  else
+  {
+    if (WinchUp == true)
+    {
+      servo_Winch.writeMicroseconds(1400);
+      delay(400);
+      servo_Winch.writeMicroseconds(1500);
+      WinchUp = false;
+    }
+  }
+}
+
+void clawUp(bool Up)
+{
+  if (Up == true)
+  {
+    servo_Claw.write(ClawClosed);
+  }
+  else
+  {
+    servo_Claw.write(ClawOpen);
+  }
+}
+
+void clawSwivelUp(bool Up)
+{
+  if (Up == true)
+  {
+    servo_ClawSwivel.write(ClawSwivelClosed);
+  }
+  else
+  {
+    servo_ClawSwivel.write(ClawSwivelOpen);
+  }
+}
+
+void armUp(bool Up)
+{
+  if (Up == true)
+  {
+    if(ArmUp == false)
+    {
+      servo_ArmMotor.writeMicroseconds(1600);
+      delay(400);
+      servo_ArmMotor.writeMicroseconds(1500);
+      ArmUp = true;
+    }
+  }
+  else
+  {
+    if (ArmUp == true)
+    {
+      servo_ArmMotor.writeMicroseconds(1400);
+      delay(400);
+      servo_ArmMotor.writeMicroseconds(1500);
+      ArmUp = false;
+    }
+  }
+}
+
 
 
