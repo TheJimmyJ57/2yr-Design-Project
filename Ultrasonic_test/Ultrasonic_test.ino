@@ -108,7 +108,7 @@ boolean bt_Cal_Initialized = false;
 bool ON = false;
 unsigned int onTimer = 0;
 unsigned int onTimerDelay = 1000;
-int MODE = 0;
+int MODE = 5;
 ////////////// HEARTBEAT TIMER VARIABLES/////////////////////////////////////////////////////////////////////////////////////
 unsigned int heartbeatTimer = 0;
 int heartbeatDelay = 0;
@@ -182,9 +182,9 @@ void setup() {
   ui_Left_Motor_Speed = 1650;
   ui_Right_Motor_Speed = 1650;
 
-  attachInterrupt(0,CS_ISR,LOW);                      //attach interrupt to D2
+//  attachInterrupt(0,CS_ISR,LOW);                      //attach interrupt to D2
   
-  clawUp(false);
+  clawUp(true);
   delay(500);
   clawSwivelUp(false);
 }
@@ -271,9 +271,21 @@ void loop()
       }
     case 5:                                                                           //pyramid finding
       {
+     /*
+        clawUp(true);
+        delay(2000);
+        clawUp(false);
+        delay(1000);
+    */
+        Ping();
         halt();
         break;
       }
+     case 6:
+     {
+      
+      break;
+     }
 
   }
 
@@ -375,8 +387,8 @@ void Ping()
 
   // Print Sensor Readings
   //#ifdef DEBUG_ULTRASONIC
-  if (MODE == 0) {
-    Serial.print("S1Time (microseconds): ");
+  if (MODE == 5) {
+ /*   Serial.print("S1Time (microseconds): ");
     Serial.print(ul_S1_Echo_Time, DEC);
     Serial.print(", cm: ");
     Serial.println(ul_S1_Echo_Time / 58); //divide time by 58 to get distance in cm
@@ -385,7 +397,7 @@ void Ping()
     Serial.print(ul_S2_Echo_Time, DEC);
     Serial.print(", cm: ");
     Serial.println(ul_S2_Echo_Time / 58); //divide time by 58 to get distance in cm
-
+*/
     Serial.print("F()Time (microseconds): ");
     Serial.print(ul_F_Echo_Time, DEC);
     Serial.print(", cm: ");
