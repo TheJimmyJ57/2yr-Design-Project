@@ -127,8 +127,6 @@ int ClawOpen = 140;
 int ClawClosed = 0;
 int ClawSwivelOpen = 175;
 int ClawSwivelClosed = 45;
-bool ClawUp = true;
-bool ClawSwivelUp = true;
 bool ArmUp = true;
 bool WinchUp = true;
 
@@ -184,8 +182,11 @@ void setup() {
   ui_Left_Motor_Speed = 1650;
   ui_Right_Motor_Speed = 1650;
 
-  clawUp(true);
-  clawSwivelUp(true);
+  attachInterrupt(0,CS_ISR,LOW);                      //attach interrupt to D2
+  
+  clawUp(false);
+  delay(500);
+  clawSwivelUp(false);
 }
 
 void loop()
@@ -270,7 +271,7 @@ void loop()
       }
     case 5:                                                                           //pyramid finding
       {
-        //hi
+        halt();
         break;
       }
 
@@ -288,7 +289,7 @@ void GrabCube()
   servo_LeftMotor.writeMicroseconds(1500);
   servo_RightMotor.writeMicroseconds(1500);
   delay(2000);
-  servo_ClawSwivel.write(ClawSwivelClosed);
+  servo_ClawSwivel.write(90);                               //set claw swivel to be in jousting position
   delay (2000);
   Serial.print("DONE");
 }
@@ -477,6 +478,12 @@ void armUp(bool Up)
       ArmUp = false;
     }
   }
+}
+
+void CS_ISR()                       //ISR function
+{
+  MODE = 4;                       //change global variable to show ISR completion
+  detachInterrupt(0);               //remove interrupt because it only needs to be used once (could alter mode in isr for switch statement)
 }
 
 
