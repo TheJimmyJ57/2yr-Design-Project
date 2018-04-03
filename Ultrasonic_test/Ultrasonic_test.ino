@@ -182,9 +182,9 @@ void setup() {
   ui_Left_Motor_Speed = 1650;
   ui_Right_Motor_Speed = 1650;
 
-//  attachInterrupt(0,CS_ISR,LOW);                      //attach interrupt to D2
+  attachInterrupt(0,CS_ISR,LOW);                      //attach interrupt to D2
   
-  clawUp(true);
+  servo_Claw.write(90);
   delay(500);
   clawSwivelUp(false);
 }
@@ -216,7 +216,6 @@ void loop()
           Ping();
         }
         halt();
-        delay(1000);
         MODE = 2;
         /*if ((distToSide2 < 15) && (distToSide1 < 15))    //spin left until the robot aligns itself with the wall
         {
@@ -253,13 +252,12 @@ void loop()
         ui_Left_Motor_Speed = 1500;
         ui_Right_Motor_Speed = 1500;
         servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);         //halt
-        servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
-        delay(1000);                                                    //delay to visually see its about to turn
-        ui_Left_Motor_Speed = 1380;
-        ui_Right_Motor_Speed = 1620;
+        servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);                                                  
+        ui_Left_Motor_Speed = 1300;
+        ui_Right_Motor_Speed = 1700;
         servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);             //write speeds for turning
         servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
-        delay(1250);                                                          //delay so robot can begin turning before considering whether it is aligned with wall after turn
+        delay(400);                                                          //delay so robot can begin turning before considering whether it is aligned with wall after turn
         MODE = 1;
         break;
       }
@@ -278,7 +276,7 @@ void loop()
         delay(1000);
     */
         Ping();
-        halt();
+        
         break;
       }
      case 6:
@@ -309,34 +307,34 @@ void GrabCube()
 void driveStraight()
 {
   lastAction = 0;
-  ui_Left_Motor_Speed = 1650;
-  ui_Right_Motor_Speed = 1650;
+  ui_Left_Motor_Speed = 1700;
+  ui_Right_Motor_Speed = 1700;
 }
 
 void driveRight()
 {
   lastAction = 1;
-  ui_Left_Motor_Speed = 1620;
-  ui_Right_Motor_Speed = 1600;
+  ui_Left_Motor_Speed = 1700;
+  ui_Right_Motor_Speed = 1660;
 }
 
 void driveLeft()
 {
   lastAction = 2;
-  ui_Left_Motor_Speed = 1600;
-  ui_Right_Motor_Speed = 1620;
+  ui_Left_Motor_Speed = 1660;
+  ui_Right_Motor_Speed = 1700;
 }
 
 void spinRight()
 {
-  ui_Left_Motor_Speed = 1560;
-  ui_Right_Motor_Speed = 1440;
+  ui_Left_Motor_Speed = 1690;
+  ui_Right_Motor_Speed = 1410;
 }
 
 void spinLeft()
 {
-  ui_Left_Motor_Speed = 1440;
-  ui_Right_Motor_Speed = 1560;
+  ui_Left_Motor_Speed = 1410;
+  ui_Right_Motor_Speed = 1690;
 }
 
 void halt()
