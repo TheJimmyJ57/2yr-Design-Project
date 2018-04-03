@@ -137,6 +137,8 @@ bool ArmUp = true;
 bool WinchUp = true;
 
 void GrabCube();
+void spinRight(int speed = 70);
+void spinLeft(int speed = 70);
 
 void setup() {
   Wire.begin();        // Wire library required for I2CEncoder library
@@ -280,14 +282,7 @@ void loop()
       }
     case 5:                                                                           //pyramid finding
       {
-        /*
-           clawUp(true);
-           delay(2000);
-           clawUp(false);
-           delay(1000);
-        */
-        Ping();
-
+        IRRead();
         break;
       }
     case 6:
@@ -298,9 +293,9 @@ void loop()
 
   }
 
-   servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
-   servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
-   Serial.println(MODE);
+  servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
+  servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
+  Serial.println(MODE);
 
   if (!switchTripped)
   {
@@ -351,16 +346,16 @@ void driveLeft()
   ui_Right_Motor_Speed = 1710;
 }
 
-void spinRight()
+void spinRight(int speed)
 {
-  ui_Left_Motor_Speed = 1670;
-  ui_Right_Motor_Speed = 1430;
+  ui_Left_Motor_Speed = (1500+speed);
+  ui_Right_Motor_Speed = (1500-speed);
 }
 
-void spinLeft()
+void spinLeft(int speed)
 {
-  ui_Left_Motor_Speed = 1430;
-  ui_Right_Motor_Speed = 1670;
+  ui_Left_Motor_Speed = (1500-speed);
+  ui_Right_Motor_Speed = (1500+speed);
 }
 
 void halt()
@@ -516,27 +511,58 @@ void armUp(bool Up)
   }
 }
 
+
+void IRRead()
+{
+  bool s1, s2, s3;
+  if (digitalRead(ci_IR1) == HIGH)
+  {
+    s1 = true;
+  }
+  else
+  {
+    s1 = false;
+  }
+  if (digitalRead(ci_IR2) == HIGH)
+  {
+    s2 = true;
+  }
+  else
+  {
+    s2 = false;
+  }
+  if (digitalRead(ci_IR3) == HIGH)
+  {
+    s3 = true;
+  }
+  else
+  {
+    s3 = false;
+  }
+  IRSensorAction(s1,s2,s3);
+}
+
 void IRSensorAction(bool s1, bool s2, bool s3) {
-  if(s1 && s2 && s3) {
+  if (s1 && s2 && s3) {
     
   }
   else if (s1 && s2 && !s3) {
-    
+    spinRight(40);
   }
   else if (s1 && !s2 && s3) {
-    
+
   }
   else if (!s1 && s2 && s3) {
-  
+    spinLeft(40);
   }
   else if (!s1 && !s2 && s3) {
-    
+
   }
   else if (!s1 && s2 && !s3) {
-    
+
   }
   else if (s1 && !s2 && !s3) {
-    
+
   }
   else if (!s1 && !s2 && !s3) {
     Trace();
@@ -544,8 +570,8 @@ void IRSensorAction(bool s1, bool s2, bool s3) {
 }
 
 void Trace() {
-  
- }
+
+}
 /*
   void CS_ISR()                       //ISR function
   {
