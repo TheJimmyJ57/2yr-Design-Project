@@ -40,6 +40,9 @@ const int ci_S2_Ultrasonic_Ping = A1;   //output plug
 const int ci_S2_Ultrasonic_Data = A2;
 const int ci_S1_Ultrasonic_Ping = A3;   //output plug
 const int ci_S1_Ultrasonic_Data = A4;   //input plug
+const int ci_IR1 = A0;
+const int ci_IR2 = A5;
+const int ci_IR3 = 3;
 
 
 //constants
@@ -108,7 +111,7 @@ boolean bt_Cal_Initialized = false;
 bool ON = false;
 unsigned int onTimer = 0;
 unsigned int onTimerDelay = 1000;
-int MODE = 0;
+int MODE = 0 ;
 ////////////// HEARTBEAT TIMER VARIABLES/////////////////////////////////////////////////////////////////////////////////////
 unsigned int heartbeatTimer = 0;
 int heartbeatDelay = 0;
@@ -149,6 +152,11 @@ void setup() {
   //set up front ultrasonic
   pinMode(ci_F_Ultrasonic_Ping, OUTPUT);
   pinMode(ci_F_Ultrasonic_Data, INPUT);
+
+  //set up IR inputs
+  pinMode(ci_IR1, INPUT);
+  pinMode(ci_IR2, INPUT);
+  pinMode(ci_IR3, INPUT);
 
   // set up drive motors
   pinMode(ci_Right_Motor, OUTPUT);
@@ -284,25 +292,25 @@ void loop()
       }
     case 6:
       {
-
+        Ping();
         break;
       }
 
   }
 
-  servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
-  servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
-//  Serial.println(MODE);
+   servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
+   servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
+   Serial.println(MODE);
 
   if (!switchTripped)
   {
     if (digitalRead(2) == HIGH)
     {
-   //   Serial.println("HIGH");
+      //   Serial.println("HIGH");
       CSmillis = millis();
     }
-//    Serial.println(CSmillis);
-    if ((millis()-CSmillis) > 200)
+    //    Serial.println(CSmillis);
+    if ((millis() - CSmillis) > 200)
     {
       halt();
       switchTripped = true;
@@ -404,21 +412,21 @@ void Ping()
   // Print Sensor Readings
   //#ifdef DEBUG_ULTRASONIC
 
-       Serial.print("S1Time (microseconds): ");
-       Serial.print(ul_S1_Echo_Time, DEC);
-       Serial.print(", cm: ");
-       Serial.println(ul_S1_Echo_Time / 58); //divide time by 58 to get distance in cm
+  Serial.print("S1Time (microseconds): ");
+  Serial.print(ul_S1_Echo_Time, DEC);
+  Serial.print(", cm: ");
+  Serial.println(ul_S1_Echo_Time / 58); //divide time by 58 to get distance in cm
 
-       Serial.print("S2Time (microseconds): ");
-       Serial.print(ul_S2_Echo_Time, DEC);
-       Serial.print(", cm: ");
-       Serial.println(ul_S2_Echo_Time / 58); //divide time by 58 to get distance in cm
-    
-    Serial.print("F()Time (microseconds): ");
-    Serial.print(ul_F_Echo_Time, DEC);
-    Serial.print(", cm: ");
-    Serial.println(ul_F_Echo_Time / 58); //divide time by 58 to get distance in cm
- 
+  Serial.print("S2Time (microseconds): ");
+  Serial.print(ul_S2_Echo_Time, DEC);
+  Serial.print(", cm: ");
+  Serial.println(ul_S2_Echo_Time / 58); //divide time by 58 to get distance in cm
+
+  Serial.print("F()Time (microseconds): ");
+  Serial.print(ul_F_Echo_Time, DEC);
+  Serial.print(", cm: ");
+  Serial.println(ul_F_Echo_Time / 58); //divide time by 58 to get distance in cm
+
   //#endif
 
 }
@@ -507,11 +515,42 @@ void armUp(bool Up)
     }
   }
 }
+
+void IRSensorAction(bool s1, bool s2, bool s3) {
+  if(s1 && s2 && s3) {
+    
+  }
+  else if (s1 && s2 && !s3) {
+    
+  }
+  else if (s1 && !s2 && s3) {
+    
+  }
+  else if (!s1 && s2 && s3) {
+  
+  }
+  else if (!s1 && !s2 && s3) {
+    
+  }
+  else if (!s1 && s2 && !s3) {
+    
+  }
+  else if (s1 && !s2 && !s3) {
+    
+  }
+  else if (!s1 && !s2 && !s3) {
+    Trace();
+  }
+}
+
+void Trace() {
+  
+ }
 /*
-void CS_ISR()                       //ISR function
-{
+  void CS_ISR()                       //ISR function
+  {
   MODE = 4;                       //change global variable to show ISR completion
   detachInterrupt(0);               //remove interrupt because it only needs to be used once (could alter mode in isr for switch statement)
-}
+  }
 */
 
