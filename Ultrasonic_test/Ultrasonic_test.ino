@@ -292,16 +292,16 @@ void loop()
 
   servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
   servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
-  Serial.println(MODE);
+//  Serial.println(MODE);
 
   if (!switchTripped)
   {
     if (digitalRead(2) == HIGH)
     {
-      Serial.println("HIGH");
+   //   Serial.println("HIGH");
       CSmillis = millis();
     }
-    Serial.println(CSmillis);
+//    Serial.println(CSmillis);
     if ((millis()-CSmillis) > 200)
     {
       halt();
@@ -403,8 +403,8 @@ void Ping()
 
   // Print Sensor Readings
   //#ifdef DEBUG_ULTRASONIC
-  if (MODE == 5) {
-    /*   Serial.print("S1Time (microseconds): ");
+
+       Serial.print("S1Time (microseconds): ");
        Serial.print(ul_S1_Echo_Time, DEC);
        Serial.print(", cm: ");
        Serial.println(ul_S1_Echo_Time / 58); //divide time by 58 to get distance in cm
@@ -413,12 +413,12 @@ void Ping()
        Serial.print(ul_S2_Echo_Time, DEC);
        Serial.print(", cm: ");
        Serial.println(ul_S2_Echo_Time / 58); //divide time by 58 to get distance in cm
-    */
+    
     Serial.print("F()Time (microseconds): ");
     Serial.print(ul_F_Echo_Time, DEC);
     Serial.print(", cm: ");
     Serial.println(ul_F_Echo_Time / 58); //divide time by 58 to get distance in cm
-  }
+ 
   //#endif
 
 }
@@ -514,5 +514,4 @@ void CS_ISR()                       //ISR function
   detachInterrupt(0);               //remove interrupt because it only needs to be used once (could alter mode in isr for switch statement)
 }
 */
-
 
