@@ -78,6 +78,7 @@ int distToSide1;
 int distToSide2;
 int distToFront;
 int findStep = 0;
+int searchMode = 1;
 
 unsigned long ul_3_Second_timer = 0;
 unsigned long ul_Display_Time;
@@ -139,8 +140,6 @@ bool ArmUp = true;
 bool WinchUp = true;
 
 void GrabCube();
-void spinRight(int speed = 70);
-void spinLeft(int speed = 70);
 
 void setup() {
   Wire.begin();        // Wire library required for I2CEncoder library
@@ -212,6 +211,7 @@ void loop()
         if ((distToFront < 25) || (distToSide1 < 25)) //check to see if the side or front are close to a wall
         {
           halt();
+          delay(100);
           MODE = 1;
         }
         else          //drive forward until the robot is close to a wall
@@ -223,19 +223,24 @@ void loop()
     case 1:               //mode to align robots side with wall
       {
         Ping();              //get new distance values
-        spinLeft();
-        delay(300);
+        spinLeft(50);
+        delay(500);
         while (!inTolerance(distToSide1, distToSide2))
         {
           Ping();
+          cubeDetection();
         }
+
+        /*  spinRight(30);
+          while (!inTolerance(distToSide1, distToSide2))
+          {
+            Ping();
+          }
+          halt();
+        */
+
         halt();
-        delat(100);
-        while (!inTolerance(distToSide1, distToSide2))
-        {
-          spinRight(50);
-          Ping();
-        }
+        delay(100);
         MODE = 2;
         /*if ((distToSide2 < 15) && (distToSide1 < 15))    //spin left until the robot aligns itself with the wall
           {
@@ -254,10 +259,8 @@ void loop()
     case 3:                                 //begin turning robot
       {
         halt();
-        ui_Left_Motor_Speed = 1330;
-        ui_Right_Motor_Speed = 1680;
-        servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);             //write speeds for turning
-        servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
+        spinLeft(180);
+        writeMotor();
         //delay so robot can begin turning before considering whether it is aligned with wall after turn
         if (millis() - previousmillis > 400)
         {
@@ -272,13 +275,13 @@ void loop()
         IRRead();
         if (findStep == 0)
         {
-        spinLeft(50);
-        delay(200);
-        while (!inTolerance(distToSide1, distToSide2))
-        {
-          Ping();
-        }
-        halt();
+          spinLeft(30);
+          delay(100);
+          while (!inTolerance(distToSide1, distToSide2))
+          {
+            Ping();
+          }
+          halt();
         }
         MODE = 5;
         break;
@@ -286,7 +289,7 @@ void loop()
     case 5:                                                                           //pyramid finding
       {
         IRRead();
-        
+
         break;
       }
     case 6:                                                                             //pyramid collection
@@ -302,18 +305,21 @@ void loop()
 
   if (!switchTripped)
   {
-    if (digitalRead(2) == HIGH)
-    {
-      //   Serial.println("HIGH");
-      CSmillis = millis();
-    }
-    //    Serial.println(CSmillis);
-    if ((millis() - CSmillis) > 200)
-    {
-      halt();
-      switchTripped = true;
-      MODE = 4;
-    }
+    cubeDetection();
+  }
+}
+
+void cubeDetection()
+{
+  if (digitalRead(2) == HIGH)
+  {
+    CSmillis = millis();
+  }
+  if ((millis() - CSmillis) > 200)
+  {
+    halt();
+    switchTripped = true;
+    MODE = 4;
   }
 }
 
@@ -331,22 +337,28 @@ void GrabCube()
 void followWall()
 {
   if (diff < -alignTolerance)         //see if back sensor is too far from wall and readjust
-        {
-          driveLeft();
-        }
-        else if (diff > alignTolerance)
-        {
-          driveRight();
-        }
-        else if (distToFront < 20)     //else if the robot needs to turn because a wall is close ahead
-        {
-          previousmillis = millis();
-          MODE = 3;
-        }
-        else if ((diff > -2) && (diff < 2))         //if difference is within tolerance
-        {
-          driveStraight();
-        }
+  {
+    driveLeft();
+  }
+  else if (diff > alignTolerance)
+  {
+    driveRight();
+  }
+  else if (distToFront < 20)     //else if the robot needs to turn because a wall is close ahead
+  {
+    previousmillis = millis();
+    MODE = 3;
+  }
+  else if ((diff > -2) && (diff < 2))         //if difference is within tolerance
+  {
+    driveStraight();
+  }
+}
+
+void writeMotor()
+{
+  servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
+  servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
 }
 
 void driveStraight()
@@ -354,6 +366,7 @@ void driveStraight()
   lastAction = 0;
   ui_Left_Motor_Speed = 1700;
   ui_Right_Motor_Speed = 1700;
+  writeMotor();
 }
 
 void driveRight()
@@ -361,6 +374,7 @@ void driveRight()
   lastAction = 1;
   ui_Left_Motor_Speed = 1710;
   ui_Right_Motor_Speed = 1660;
+  writeMotor();
 }
 
 void driveLeft()
@@ -368,26 +382,28 @@ void driveLeft()
   lastAction = 2;
   ui_Left_Motor_Speed = 1660;
   ui_Right_Motor_Speed = 1710;
+  writeMotor();
 }
 
 void spinRight(int speed)
 {
   ui_Left_Motor_Speed = (1500 + speed);
   ui_Right_Motor_Speed = (1500 - speed);
+  writeMotor();
 }
 
 void spinLeft(int speed)
 {
   ui_Left_Motor_Speed = (1500 - speed);
   ui_Right_Motor_Speed = (1500 + speed);
+  writeMotor();
 }
 
 void halt()
 {
   ui_Left_Motor_Speed = 1500;
   ui_Right_Motor_Speed = 1500;
-  servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
-  servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
+  writeMotor();
 }
 
 void Ping()
@@ -430,8 +446,7 @@ void Ping()
 
   // Print Sensor Readings
   //#ifdef DEBUG_ULTRASONIC
-  if (MODE == 1)
-  {
+
   Serial.print("S1Time (microseconds): ");
   Serial.print(ul_S1_Echo_Time, DEC);
   Serial.print(", cm: ");
@@ -441,13 +456,13 @@ void Ping()
   Serial.print(ul_S2_Echo_Time, DEC);
   Serial.print(", cm: ");
   Serial.println(ul_S2_Echo_Time / 58); //divide time by 58 to get distance in cm
-/*
-  Serial.print("F()Time (microseconds): ");
-  Serial.print(ul_F_Echo_Time, DEC);
-  Serial.print(", cm: ");
-  Serial.println(ul_F_Echo_Time / 58); //divide time by 58 to get distance in cm
+  /*
+    Serial.print("F()Time (microseconds): ");
+    Serial.print(ul_F_Echo_Time, DEC);
+    Serial.print(", cm: ");
+    Serial.println(ul_F_Echo_Time / 58); //divide time by 58 to get distance in cm
   */
-  }
+
   //#endif
 
 }
@@ -586,7 +601,7 @@ void IRSensorAction(bool s1, bool s2, bool s3) {
     findStep = 3;
   }
   else if (!s1 && !s2 && s3) {
-    spinRight(40);
+    spinRight(30);
     findStep = 7;
   }
   else if (!s1 && s2 && !s3) {                                            // if only the middle sensor sees it, aqcuire pyramid
@@ -594,7 +609,7 @@ void IRSensorAction(bool s1, bool s2, bool s3) {
     findStep = 5;
   }
   else if (s1 && !s2 && !s3) {
-    spinLeft(40);
+    spinLeft(30);
     findStep = 6;
   }
   else if (!s1 && !s2 && !s3) {
@@ -604,11 +619,11 @@ void IRSensorAction(bool s1, bool s2, bool s3) {
     }
     else if (findStep == 7)                 //if left sensor had it but now it lost it
     {
-      spinRight(40);
+      spinRight(30);
     }
     else if (findStep == 6)                   //if right sensor saw it but now it lost it
     {
-      spinRight(40);
+      spinRight(30);                                                                                              //BOTH SPINRIGHT NEED TO CORRECT
     }
     else if (MODE != 4)                         //if no readings have occured and its not in the grabcube mode
     {
@@ -617,48 +632,48 @@ void IRSensorAction(bool s1, bool s2, bool s3) {
   }
 }
 
-void Trace() 
+void Trace()
 {
   Ping;
-  pryramidSearch();
+  pyramidSearch();
 }
 
-/*
-void PyramidSearch()
+
+void pyramidSearch()
 {
-     if (diff < -alignTolerance)         //see if back sensor is too far from wall and readjust
-        {
-          driveLeft();
-        }
-        else if (diff > alignTolerance)
-        {
-          driveRight();
-        }
-        else if (distToFront < 20)     //else if the robot needs to turn because a wall is close ahead
-        {
-          previousmillis = millis();
-          MODE = 3;
-        }
-        else if ((diff > -2) && (diff < 2))         //if difference is within tolerance
-        {
-          driveStraight();
-        }
+  if (diff < -alignTolerance)         //see if back sensor is too far from wall and readjust
+  {
+    driveLeft();
+  }
+  else if (diff > alignTolerance)
+  {
+    driveRight();
+  }
+  else if (distToFront < 20)     //else if the robot needs to turn because a wall is close ahead
+  {
+    previousmillis = millis();
+    MODE = 3;
+  }
+  else if ((diff > -2) && (diff < 2))         //if difference is within tolerance
+  {
+    driveStraight();
+  }
 
-        
-        if (searchMode == 4){
-          searchMode = 0;
-        }
-        searchMode++;
+
+  if (searchMode == 4) {
+    searchMode = 0;
+  }
+  searchMode++;
 }
 
-void turn(int x);
+void turn(int x)
 {
   if (x == 0)
   {
-    
+
   }
 }
-*/
+
 
 void acquirePyramid()                          //when pyramid is right infront
 {
