@@ -25,7 +25,8 @@ Servo servo_ClawSwivel;
 
 
 //port pin constants
-const int ci_ContactSwitch = 2;
+const int ci_S1_Ultrasonic_Ping = 2;   //output plug
+const int ci_S1_Ultrasonic_Data = 3;   //input plug
 const int ci_F_Ultrasonic_Ping = 4;   //output plug
 const int ci_F_Ultrasonic_Data = 5;   //input plug
 const int ci_Winch = 6;
@@ -36,14 +37,20 @@ const int ci_Claw = 10;
 const int ci_Claw_Swivel = 11;
 const int ci_Mode_Button = 12;
 const int ci_LED = 13;
+const int ci_ContactSwitch = A0;
 const int ci_S2_Ultrasonic_Ping = A1;   //output plug
 const int ci_S2_Ultrasonic_Data = A2;
+<<<<<<< HEAD:Driving_Chip/Driving_Chip.ino
 const int ci_S1_Ultrasonic_Ping = A3;   //output plug
 const int ci_S1_Ultrasonic_Data = A4;   //input plug
 const int ci_IR1 = A0;
 const int ci_IR2 = A5;
 const int ci_IR3 = 3;
 
+=======
+const int ci_I2C_SDA = A4;         // I2C data = white
+const int ci_I2C_SCL = A5;         // I2C clock = yellow
+>>>>>>> parent of 35a2614... pin changes and better tracking:Ultrasonic_test/Ultrasonic_test.ino
 
 //constants
 
@@ -196,9 +203,14 @@ void setup() {
   ui_Left_Motor_Speed = 1650;
   ui_Right_Motor_Speed = 1650;
 
+<<<<<<< HEAD:Driving_Chip/Driving_Chip.ino
   servo_Claw.write(90);
   delay(500);
   clawSwivelUp(false);
+=======
+  servo_Claw.write(ClawClosed);
+  servo_ClawSwivel.write(ClawSwivelClosed);
+>>>>>>> parent of 35a2614... pin changes and better tracking:Ultrasonic_test/Ultrasonic_test.ino
 }
 
 void loop()
@@ -223,9 +235,14 @@ void loop()
     case 1:               //mode to align robots side with wall
       {
         Ping();              //get new distance values
+<<<<<<< HEAD:Driving_Chip/Driving_Chip.ino
         spinLeft(50);
         delay(500);
         while (!inTolerance(distToSide1, distToSide2))
+=======
+        spinLeft();
+        while(distToSide2 != distToSide1)
+>>>>>>> parent of 35a2614... pin changes and better tracking:Ultrasonic_test/Ultrasonic_test.ino
         {
           Ping();
           cubeDetection();
@@ -467,6 +484,7 @@ void Ping()
 
 }
 
+<<<<<<< HEAD:Driving_Chip/Driving_Chip.ino
 bool inTolerance(int num1, int num2)
 {
   if (abs(num1 - num2) < 3 * alignTolerance)
@@ -480,6 +498,8 @@ bool inTolerance(int num1, int num2)
 }
 
 
+=======
+>>>>>>> parent of 35a2614... pin changes and better tracking:Ultrasonic_test/Ultrasonic_test.ino
 void rampUp(bool Up)
 {
   if (Up == true)
@@ -534,8 +554,8 @@ void armUp(bool Up)
   {
     if (ArmUp == false)
     {
-      servo_ArmMotor.writeMicroseconds(1300);
-      delay(2800);
+      servo_ArmMotor.writeMicroseconds(1600);
+      delay(400);
       servo_ArmMotor.writeMicroseconds(1500);
       ArmUp = true;
     }
@@ -544,8 +564,8 @@ void armUp(bool Up)
   {
     if (ArmUp == true)
     {
-      servo_ArmMotor.writeMicroseconds(1700);
-      delay(2800);
+      servo_ArmMotor.writeMicroseconds(1400);
+      delay(400);
       servo_ArmMotor.writeMicroseconds(1500);
       ArmUp = false;
     }
