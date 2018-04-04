@@ -16,6 +16,7 @@ SoftwareSerial IR3(A3, 11); // RX, TX
 int  sensor_select = 0;
 unsigned int timer = 0;
 int Timer = 0;
+int resetTimer = 0;
 int pin_out1 = 0;
 int pin_out2 = 0;
 int pin_out3 = 0;
@@ -152,44 +153,47 @@ void TimerPinStuff(int select) {
 }
 
 void IRSensorOutput(bool s1, bool s2, bool s3) {
-  if (s1 && s2 && s3) {
-    digitalWrite(IR1_pin, HIGH);
-    digitalWrite(IR2_pin, HIGH);
-    digitalWrite(IR3_pin, HIGH);
-  }
-  else if (s1 && s2 && !s3) {
-    digitalWrite(IR1_pin, HIGH);
-    digitalWrite(IR2_pin, HIGH);
-    digitalWrite(IR3_pin, LOW);
-  }
-  else if (s1 && !s2 && s3) {
-    digitalWrite(IR1_pin, HIGH);
-    digitalWrite(IR2_pin, LOW);
-    digitalWrite(IR3_pin, HIGH);
-  }
-  else if (!s1 && s2 && s3) {
-    digitalWrite(IR1_pin, LOW);
-    digitalWrite(IR2_pin, HIGH);
-    digitalWrite(IR3_pin, HIGH);
-  }
-  else if (!s1 && !s2 && s3) {
-    digitalWrite(IR1_pin, LOW);
-    digitalWrite(IR2_pin, LOW);
-    digitalWrite(IR3_pin, HIGH);
-  }
-  else if (!s1 && s2 && !s3) {
-    digitalWrite(IR1_pin, LOW);
-    digitalWrite(IR2_pin, HIGH);
-    digitalWrite(IR3_pin, LOW);
-  }
-  else if (s1 && !s2 && !s3) {
-    digitalWrite(IR1_pin, HIGH);
-    digitalWrite(IR2_pin, LOW);
-    digitalWrite(IR3_pin, LOW);
-  }
-  else if (!s1 && !s2 && !s3) {
-    digitalWrite(IR1_pin, LOW);
-    digitalWrite(IR2_pin, LOW);
-    digitalWrite(IR3_pin, LOW);
+  if (millis() - resetTimer > 500) {
+    if (s1 && s2 && s3) {
+      digitalWrite(IR1_pin, HIGH);
+      digitalWrite(IR2_pin, HIGH);
+      digitalWrite(IR3_pin, HIGH);
+    }
+    else if (s1 && s2 && !s3) {
+      digitalWrite(IR1_pin, HIGH);
+      digitalWrite(IR2_pin, HIGH);
+      digitalWrite(IR3_pin, LOW);
+    }
+    else if (s1 && !s2 && s3) {
+      digitalWrite(IR1_pin, HIGH);
+      digitalWrite(IR2_pin, LOW);
+      digitalWrite(IR3_pin, HIGH);
+    }
+    else if (!s1 && s2 && s3) {
+      digitalWrite(IR1_pin, LOW);
+      digitalWrite(IR2_pin, HIGH);
+      digitalWrite(IR3_pin, HIGH);
+    }
+    else if (!s1 && !s2 && s3) {
+      digitalWrite(IR1_pin, LOW);
+      digitalWrite(IR2_pin, LOW);
+      digitalWrite(IR3_pin, HIGH);
+    }
+    else if (!s1 && s2 && !s3) {
+      digitalWrite(IR1_pin, LOW);
+      digitalWrite(IR2_pin, HIGH);
+      digitalWrite(IR3_pin, LOW);
+    }
+    else if (s1 && !s2 && !s3) {
+      digitalWrite(IR1_pin, HIGH);
+      digitalWrite(IR2_pin, LOW);
+      digitalWrite(IR3_pin, LOW);
+    }
+    else if (!s1 && !s2 && !s3) {
+      digitalWrite(IR1_pin, LOW);
+      digitalWrite(IR2_pin, LOW);
+      digitalWrite(IR3_pin, LOW);
+    }
+    resetTimer = millis();
   }
 }
