@@ -75,7 +75,7 @@ int distToSide1;
 int distToSide2;
 int distToFront;
 int findStep = 0;
-int searchMode = 1;
+int searchMode = 0;
 
 unsigned long ul_3_Second_timer = 0;
 unsigned long ul_Display_Time;
@@ -110,7 +110,7 @@ boolean bt_Cal_Initialized = false;
 bool ON = false;
 unsigned int onTimer = 0;
 unsigned int onTimerDelay = 1000;
-int MODE = 0 ;
+int MODE = 5 ;
 ////////////// HEARTBEAT TIMER VARIABLES/////////////////////////////////////////////////////////////////////////////////////
 unsigned int heartbeatTimer = 0;
 int heartbeatDelay = 0;
@@ -191,6 +191,8 @@ void setup() {
   clawSwivelUp(false);
 }
 
+void acquirePyramid();
+
 void loop()
 {
   digitalWrite(13, HIGH);
@@ -236,7 +238,7 @@ void loop()
           halt();
           delay(200);
           Ping();
-          while(distToFront < 15)
+          while (distToFront < 15)
           {
             Ping();
             reverse();
@@ -286,12 +288,19 @@ void loop()
     case 4:                                                                         //if cube has tripped contact switch
       {
         GrabCube();
+        IRRead();
         MODE = 5;
         break;
       }
     case 5:                                                                           //pyramid finding
       {
-        //hi
+        IRRead();
+        break;
+      }
+    case 6:
+      {
+        halt();
+        acquirePyramid();
         break;
       }
 
@@ -357,8 +366,8 @@ void followWall()
 
 void reverse()
 {
-  ui_Left_Motor_Speed = 1620;
-  ui_Right_Motor_Speed = 1620;
+  ui_Left_Motor_Speed = 1380;
+  ui_Right_Motor_Speed = 1380;
   writeMotor();
 }
 
@@ -461,16 +470,16 @@ void Ping()
   //#ifdef DEBUG_ULTRASONIC
   if (MODE == 2) {
     /*
-    Serial.print("S1Time (microseconds): ");
-    Serial.print(ul_S1_Echo_Time, DEC);
-    Serial.print(", cm: ");
-    Serial.println(ul_S1_Echo_Time / 58); //divide time by 58 to get distance in cm
+      Serial.print("S1Time (microseconds): ");
+      Serial.print(ul_S1_Echo_Time, DEC);
+      Serial.print(", cm: ");
+      Serial.println(ul_S1_Echo_Time / 58); //divide time by 58 to get distance in cm
 
-    Serial.print("S2Time (microseconds): ");
-    Serial.print(ul_S2_Echo_Time, DEC);
-    Serial.print(", cm: ");
-    Serial.println(ul_S2_Echo_Time / 58); //divide time by 58 to get distance in cm
-*/
+      Serial.print("S2Time (microseconds): ");
+      Serial.print(ul_S2_Echo_Time, DEC);
+      Serial.print(", cm: ");
+      Serial.println(ul_S2_Echo_Time / 58); //divide time by 58 to get distance in cm
+    */
     Serial.print("F()Time (microseconds): ");
     Serial.print(ul_F_Echo_Time, DEC);
     Serial.print(", cm: ");
@@ -584,106 +593,107 @@ void IRRead()
 
 void IRSensorAction(bool s1, bool s2, bool s3) {
   if (s1 && s2 && s3) {
-    driveStraight();
+    MODE = 6;
     findStep = 1;
   }
   else if (s1 && s2 && !s3) {
-    driveStraight();
+    MODE = 6;
     findStep = 2;
   }
   else if (s1 && !s2 && s3) {
-    driveStraight();
-    findStep = 4;
-  }
-  else if (!s1 && s2 && s3) {
-    driveStraight();
+    MODE = 6;
     findStep = 3;
   }
-  else if (!s1 && !s2 && s3) {
-    spinRight(30);
-    findStep = 7;
-  }
-  else if (!s1 && s2 && !s3) {                                            // if only the middle sensor sees it, aqcuire pyramid
+  else if (!s1 && s2 && s3) {
     MODE = 6;
+    findStep = 4;
+  }
+  else if (!s1 && !s2 && s3) {
+    spinLeft(80);
     findStep = 5;
   }
   else if (s1 && !s2 && !s3) {
-    spinLeft(30);
+    spinRight(80);
     findStep = 6;
   }
+  else if (!s1 && s2 && !s3) {                                            // if only the middle sensor sees it, aqcuire pyramid
+    driveStraight();
+    findStep = 7;
+  }
   else if (!s1 && !s2 && !s3) {
-    if ((findStep == 1) || (findStep == 2) || (findStep == 3) || findStep == 4)                   //if the middle sensor had the pyramid in view then lost it
+    if (findStep == 5)                 //if left sensor had it but now it lost it
     {
-      MODE = 6;
-    }
-    else if (findStep == 7)                 //if left sensor had it but now it lost it
-    {
-      spinRight(30);
+      spinLeft(60);
     }
     else if (findStep == 6)                   //if right sensor saw it but now it lost it
     {
-      spinRight(30);                                                                                              //BOTH SPINRIGHT NEED TO CORRECT
+      spinRight(60);
+    }
+    if (findStep == 7)                                    //need condition
+    {
+
     }
     else if (MODE != 4)                         //if no readings have occured and its not in the grabcube mode
     {
       Trace();                                    //if no readings of the correct pyramid have occured
     }
+    else                                                                                                    //NEED TO WRITE CONDITION OF WHAT TO DO AFTER CUBE IS COLLECTED AND NO PYRAMID IS SEEN
+    {
+
+    }
   }
 }
 
-void Trace()
-{
-  Ping;
-  pyramidSearch();
-}
-
-
-void pyramidSearch()
-{
-  if (diff < -alignTolerance)         //see if back sensor is too far from wall and readjust
+  void Trace()
   {
-    driveLeft();
-  }
-  else if (diff > alignTolerance)
-  {
-    driveRight();
-  }
-  else if (distToFront < 20)     //else if the robot needs to turn because a wall is close ahead
-  {
-    previousmillis = millis();
-    MODE = 3;
-  }
-  else if ((diff > -2) && (diff < 2))         //if difference is within tolerance
-  {
+    Ping;
     driveStraight();
+    // pyramidSearch();
   }
 
 
-  if (searchMode == 4) {
-    searchMode = 0;
-  }
-  searchMode++;
-}
-
-void turn(int x)
-{
-  if (x == 0)
+  void pyramidSearch()
   {
+    if (diff < -alignTolerance)         //see if back sensor is too far from wall and readjust
+    {
+      driveLeft();
+    }
+    else if (diff > alignTolerance)
+    {
+      driveRight();
+    }
+    else if (distToFront < 20)     //else if the robot needs to turn because a wall is close ahead
+    {
+      previousmillis = millis();
+      MODE = 3;
+    }
+    else if ((diff > -2) && (diff < 2))         //if difference is within tolerance
+    {
+      driveStraight();
+    }
 
+
+    if (searchMode == 4) {
+      searchMode = 0;
+    }
+    searchMode++;
   }
-}
 
-
-void acquirePyramid()                          //when pyramid is right infront
-{
-  for (int i = 0; i < 5; i++)
+  void turn(int x)
   {
-    servo_Claw.write(ClawOpen);
-    delay(500);
-    servo_Claw.write(ClawClosed);
-    delay(500);
+    if (x == 0)
+    {
+
+    }
   }
-}
+
+  void acquirePyramid()                          //when pyramid is right infront
+  {
+    clawUp(true);
+    delay(4000);
+    clawUp(false);
+    delay(4000);
+  }
 
 
 
