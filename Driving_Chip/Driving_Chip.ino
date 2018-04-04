@@ -1,12 +1,9 @@
 /* HELLO
-
   MSE 2202 test code 1
   Language: Arduino
   Authors: Drew, Brooke, Gabriel and Brad
   Date: 19/3/18
-
   Rev 1 - Initial version
-
 */
 
 #include <Servo.h>
@@ -25,8 +22,7 @@ Servo servo_ClawSwivel;
 
 
 //port pin constants
-const int ci_S1_Ultrasonic_Ping = 2;   //output plug
-const int ci_S1_Ultrasonic_Data = 3;   //input plug
+const int ci_ContactSwitch = 2;
 const int ci_F_Ultrasonic_Ping = 4;   //output plug
 const int ci_F_Ultrasonic_Data = 5;   //input plug
 const int ci_Winch = 6;
@@ -37,20 +33,14 @@ const int ci_Claw = 10;
 const int ci_Claw_Swivel = 11;
 const int ci_Mode_Button = 12;
 const int ci_LED = 13;
-const int ci_ContactSwitch = A0;
 const int ci_S2_Ultrasonic_Ping = A1;   //output plug
 const int ci_S2_Ultrasonic_Data = A2;
-<<<<<<< HEAD:Driving_Chip/Driving_Chip.ino
 const int ci_S1_Ultrasonic_Ping = A3;   //output plug
 const int ci_S1_Ultrasonic_Data = A4;   //input plug
 const int ci_IR1 = A0;
 const int ci_IR2 = A5;
 const int ci_IR3 = 3;
 
-=======
-const int ci_I2C_SDA = A4;         // I2C data = white
-const int ci_I2C_SCL = A5;         // I2C clock = yellow
->>>>>>> parent of 35a2614... pin changes and better tracking:Ultrasonic_test/Ultrasonic_test.ino
 
 //constants
 
@@ -115,7 +105,6 @@ boolean bt_Heartbeat = true;
 boolean bt_3_S_Time_Up = false;
 boolean bt_Do_Once = false;
 boolean bt_Cal_Initialized = false;
-bool pyramidClose = false;
 
 ////////////// BUTTON TOGGLE VARIABLES //////////////////////////////////////////////////////////////////////////////
 bool ON = false;
@@ -163,11 +152,6 @@ void setup() {
   pinMode(ci_F_Ultrasonic_Ping, OUTPUT);
   pinMode(ci_F_Ultrasonic_Data, INPUT);
 
-  //set up IR inputs
-  pinMode(ci_IR1, INPUT);
-  pinMode(ci_IR2, INPUT);
-  pinMode(ci_IR3, INPUT);
-
   // set up drive motors
   pinMode(ci_Right_Motor, OUTPUT);
   servo_RightMotor.attach(ci_Right_Motor);
@@ -203,14 +187,8 @@ void setup() {
   ui_Left_Motor_Speed = 1650;
   ui_Right_Motor_Speed = 1650;
 
-<<<<<<< HEAD:Driving_Chip/Driving_Chip.ino
-  servo_Claw.write(90);
-  delay(500);
-  clawSwivelUp(false);
-=======
-  servo_Claw.write(ClawClosed);
-  servo_ClawSwivel.write(ClawSwivelClosed);
->>>>>>> parent of 35a2614... pin changes and better tracking:Ultrasonic_test/Ultrasonic_test.ino
+  clawUp(true);
+  clawSwivelUp(true);
 }
 
 void loop()
@@ -223,7 +201,6 @@ void loop()
         if ((distToFront < 25) || (distToSide1 < 25)) //check to see if the side or front are close to a wall
         {
           halt();
-          delay(100);
           MODE = 1;
         }
         else          //drive forward until the robot is close to a wall
@@ -235,29 +212,13 @@ void loop()
     case 1:               //mode to align robots side with wall
       {
         Ping();              //get new distance values
-<<<<<<< HEAD:Driving_Chip/Driving_Chip.ino
         spinLeft(50);
-        delay(500);
         while (!inTolerance(distToSide1, distToSide2))
-=======
-        spinLeft();
-        while(distToSide2 != distToSide1)
->>>>>>> parent of 35a2614... pin changes and better tracking:Ultrasonic_test/Ultrasonic_test.ino
         {
           Ping();
-          cubeDetection();
         }
-
-        /*  spinRight(30);
-          while (!inTolerance(distToSide1, distToSide2))
-          {
-            Ping();
-          }
-          halt();
-        */
-
         halt();
-        delay(100);
+        delay(500);
         MODE = 2;
         /*if ((distToSide2 < 15) && (distToSide1 < 15))    //spin left until the robot aligns itself with the wall
           {
@@ -270,60 +231,58 @@ void loop()
     case 2:                              // follow wall
       {
         Ping();
-        followWall();
+
+        if (diff < -alignTolerance)         //see if back sensor is too far from wall and readjust
+        {
+          driveLeft();
+        }
+        else if (diff > alignTolerance)
+        {
+          driveRight();
+        }
+        else if (distToFront < 20)     //else if the robot needs to turn because a wall is close ahead
+        {
+          MODE = 3;
+        }
+        else if ((diff > -2) && (diff < 2))         //if difference is within tolerance
+        {
+          driveStraight();
+        }
         break;
       }
     case 3:                                 //begin turning robot
       {
-        halt();
-        spinLeft(180);
-        writeMotor();
-        //delay so robot can begin turning before considering whether it is aligned with wall after turn
-        if (millis() - previousmillis > 400)
-        {
-          MODE = 1;
-        }
-
+        ui_Left_Motor_Speed = 1500;
+        ui_Right_Motor_Speed = 1500;
+        servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);         //halt
+        servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
+        delay(1000);                                                    //delay to visually see its about to turn
+        ui_Left_Motor_Speed = 1380;
+        ui_Right_Motor_Speed = 1620;
+        servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);             //write speeds for turning
+        servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
+        delay(1250);                                                          //delay so robot can begin turning before considering whether it is aligned with wall after turn
+        MODE = 1;
         break;
       }
     case 4:                                                                         //if cube has tripped contact switch
       {
         GrabCube();
-        IRRead();
-        if (findStep == 0)
-        {
-          spinLeft(30);
-          delay(100);
-          while (!inTolerance(distToSide1, distToSide2))
-          {
-            Ping();
-          }
-          halt();
-        }
         MODE = 5;
         break;
       }
     case 5:                                                                           //pyramid finding
       {
-        IRRead();
-
+        //hi
         break;
-      }
-    case 6:                                                                             //pyramid collection
-      {
-        acquirePyramid();
       }
 
   }
 
+  //  Alingwheel();
   servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
   servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
   Serial.println(MODE);
-
-  if (!switchTripped)
-  {
-    cubeDetection();
-  }
 }
 
 void cubeDetection()
@@ -423,6 +382,18 @@ void halt()
   writeMotor();
 }
 
+bool inTolerance(int num1, int num2)
+{
+  if (abs(num1 - num2) < 3 * alignTolerance)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
 void Ping()
 {
   // front side
@@ -463,43 +434,26 @@ void Ping()
 
   // Print Sensor Readings
   //#ifdef DEBUG_ULTRASONIC
+  if (MODE == 0) {
+    Serial.print("S1Time (microseconds): ");
+    Serial.print(ul_S1_Echo_Time, DEC);
+    Serial.print(", cm: ");
+    Serial.println(ul_S1_Echo_Time / 58); //divide time by 58 to get distance in cm
 
-  Serial.print("S1Time (microseconds): ");
-  Serial.print(ul_S1_Echo_Time, DEC);
-  Serial.print(", cm: ");
-  Serial.println(ul_S1_Echo_Time / 58); //divide time by 58 to get distance in cm
+    Serial.print("S2Time (microseconds): ");
+    Serial.print(ul_S2_Echo_Time, DEC);
+    Serial.print(", cm: ");
+    Serial.println(ul_S2_Echo_Time / 58); //divide time by 58 to get distance in cm
 
-  Serial.print("S2Time (microseconds): ");
-  Serial.print(ul_S2_Echo_Time, DEC);
-  Serial.print(", cm: ");
-  Serial.println(ul_S2_Echo_Time / 58); //divide time by 58 to get distance in cm
-  /*
     Serial.print("F()Time (microseconds): ");
     Serial.print(ul_F_Echo_Time, DEC);
     Serial.print(", cm: ");
     Serial.println(ul_F_Echo_Time / 58); //divide time by 58 to get distance in cm
-  */
-
+  }
   //#endif
 
 }
 
-<<<<<<< HEAD:Driving_Chip/Driving_Chip.ino
-bool inTolerance(int num1, int num2)
-{
-  if (abs(num1 - num2) < 3 * alignTolerance)
-  {
-    return true;
-  }
-  else
-  {
-    return false;
-  }
-}
-
-
-=======
->>>>>>> parent of 35a2614... pin changes and better tracking:Ultrasonic_test/Ultrasonic_test.ino
 void rampUp(bool Up)
 {
   if (Up == true)
@@ -554,8 +508,8 @@ void armUp(bool Up)
   {
     if (ArmUp == false)
     {
-      servo_ArmMotor.writeMicroseconds(1600);
-      delay(400);
+      servo_ArmMotor.writeMicroseconds(1300);
+      delay(2800);
       servo_ArmMotor.writeMicroseconds(1500);
       ArmUp = true;
     }
@@ -564,14 +518,13 @@ void armUp(bool Up)
   {
     if (ArmUp == true)
     {
-      servo_ArmMotor.writeMicroseconds(1400);
-      delay(400);
+      servo_ArmMotor.writeMicroseconds(1700);
+      delay(2800);
       servo_ArmMotor.writeMicroseconds(1500);
       ArmUp = false;
     }
   }
 }
-
 
 void IRRead()
 {
@@ -706,11 +659,5 @@ void acquirePyramid()                          //when pyramid is right infront
   }
 }
 
-/*
-  void CS_ISR()                       //ISR function
-  {
-  MODE = 4;                       //change global variable to show ISR completion
-  detachInterrupt(0);               //remove interrupt because it only needs to be used once (could alter mode in isr for switch statement)
-  }
-*/
+
 
