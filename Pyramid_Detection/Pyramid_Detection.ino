@@ -118,10 +118,9 @@ void loop() { // run over and over
   }
 
   Timer ++;
-  if (Timer > 3000) {
+  if (Timer > 2500) {
     Timer = 0;
     sensor_select++;
-    //timer = millis();
     if (sensor_select > 2)
     {
       sensor_select = 0;
@@ -129,9 +128,6 @@ void loop() { // run over and over
     TimerPinStuff(sensor_select);
   }
   IRSensorOutput(pin_out1, pin_out2, pin_out3);
-
-  //Serial.write(sensor_select);
-
 }
 
 void TimerPinStuff(int select) {
