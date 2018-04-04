@@ -77,6 +77,7 @@ int diff;
 int distToSide1;
 int distToSide2;
 int distToFront;
+int findStep = 0;
 
 unsigned long ul_3_Second_timer = 0;
 unsigned long ul_Display_Time;
@@ -106,6 +107,7 @@ boolean bt_Heartbeat = true;
 boolean bt_3_S_Time_Up = false;
 boolean bt_Do_Once = false;
 boolean bt_Cal_Initialized = false;
+bool pyramidClose = false;
 
 ////////////// BUTTON TOGGLE VARIABLES //////////////////////////////////////////////////////////////////////////////
 bool ON = false;
@@ -544,33 +546,63 @@ void IRRead()
 
 void IRSensorAction(bool s1, bool s2, bool s3) {
   if (s1 && s2 && s3) {
-    
+    driveStraight();
+    findStep = 8;
   }
   else if (s1 && s2 && !s3) {
-    spinRight(40);
+    driveStraight();
+    findStep = 1;
   }
   else if (s1 && !s2 && s3) {
-
+    driveStraight();
+    findStep = 2;                         
   }
   else if (!s1 && s2 && s3) {
-    spinLeft(40);
+    driveStraight();
+    findStep = 3;
   }
   else if (!s1 && !s2 && s3) {
-
+    spinRight(40);
+    findStep = 4;
   }
   else if (!s1 && s2 && !s3) {
-
+    acquirePyramid();
+    findStep = 5;
   }
   else if (s1 && !s2 && !s3) {
-
+    spinLeft(40);
+    findStep = 6;
   }
   else if (!s1 && !s2 && !s3) {
-    Trace();
+    if (findStep == 2)
+    {
+      acquirePyramid();
+    }
+ //   Trace();
+    findStep = 7;
   }
 }
 
 void Trace() {
+    if (findStep)                      //if we have received the correct pyramid reading
+    {
+      
+    }
+    else                                      //if pyramid has not been detected
+    {
+      
+    }
+}
 
+void acquirePyramid                           //when pyramid is right infront
+{
+  for(int i = 0; i < 5; i++)
+  {
+  servo_Claw.write(ClawOpen);
+  delay(500);
+  servo_Claw.write(ClawClosed);
+  delay(500);
+  {
 }
 /*
   void CS_ISR()                       //ISR function
