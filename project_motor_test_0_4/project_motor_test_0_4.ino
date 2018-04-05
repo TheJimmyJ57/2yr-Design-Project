@@ -407,14 +407,19 @@ bool inTolerance(int num1, int num2)
 }
 
 
-void rampUp(bool Up)
+void rampUp(bool Up, int mode) //Mode 1 is with no pyramid, mode 2 is with a pyramid on the ramp
 {
   if (Up == true)
   {
-    if(WinchUp == false)
+    if (WinchUp == false)
     {
-      servo_Winch.writeMicroseconds(1600);
-      delay(400);
+      servo_Winch.writeMicroseconds(1800);
+      if (mode == 1) {
+        delay(1500);
+      }
+      else {
+        delay(1800);
+      }
       servo_Winch.writeMicroseconds(1500);
       WinchUp = true;
     }
@@ -423,8 +428,8 @@ void rampUp(bool Up)
   {
     if (WinchUp == true)
     {
-      servo_Winch.writeMicroseconds(1400);
-      delay(400);
+      servo_Winch.writeMicroseconds(1200);
+      delay(1500);
       servo_Winch.writeMicroseconds(1500);
       WinchUp = false;
     }
