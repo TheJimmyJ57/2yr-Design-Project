@@ -110,7 +110,7 @@ boolean bt_Cal_Initialized = false;
 bool ON = false;
 unsigned int onTimer = 0;
 unsigned int onTimerDelay = 1000;
-int MODE = 5 ;
+int MODE = 0 ;
 ////////////// HEARTBEAT TIMER VARIABLES/////////////////////////////////////////////////////////////////////////////////////
 unsigned int heartbeatTimer = 0;
 int heartbeatDelay = 0;
@@ -664,11 +664,17 @@ void IRSensorAction(bool s1, bool s2, bool s3) {
 
 void Trace()
 {
+  if(timeUntilTurn = 0)
+  {
+    timeUntilTurn = millis();
+  }
   Ping();
   if (Nturns < 4)
   {
     if (distToFront < 30)
     {
+      halt();
+      delay(2000);
       turn();
     }
     else if ((millis() - timeUntilTurn) > 1500)
