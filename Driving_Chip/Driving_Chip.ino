@@ -117,9 +117,11 @@ int heartbeatDelay = 0;
 ////////////// ACTION TIMER VARIABLES/////////////////////////////////////////////////////////////////////////////////////
 unsigned int actionTimer = 0;
 int actionDelay = 0;
-double previousmillis;
 double CSmillis;
-bool switchTripped;
+bool switchTripped = false;
+int Nturns = 0;
+double timeUntilTurn = 0;
+double sweepTimer = 0;
 ///////////// ALIGNMENT VARIABLES ////////////////////////////////////////////////////////////////////////
 int alignTolerance = 1;
 int spinTolerance = 3;
@@ -262,26 +264,7 @@ void loop()
       }
     case 3:                                 //begin turning robot
       {
-        writeMotor();
-        delay(500);                                                    //delay to visually see its about to turn
-        ui_Left_Motor_Speed = 1330;
-        ui_Right_Motor_Speed = 1670;
-        writeMotor();
-        delay(600);                                                          //delay so robot can begin turning before considering whether it is aligned with wall after turn
-        Ping();              //get new distance values
-        while (!inTolerance(distToSide1, distToSide2))
-        {
-          Ping();
-        }
-        halt();
-        delay(200);
-        Ping();
-        while (distToSide1 > (distToSide2 + 2))
-        {
-          Ping();
-          spinRight(120);
-          writeMotor();
-        }
+        turn();
         MODE = 2;
         break;
       }
@@ -306,10 +289,15 @@ void loop()
 
   }
 
-  //  Alingwheel();
   servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
   servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
-  Serial.println(MODE);
+
+  if (!switchTripped)
+  {
+    cubeDetection();
+  }
+
+  //Serial.println(MODE);
 }
 
 void cubeDetection()
@@ -355,13 +343,35 @@ void followWall()
   }
   else if (distToFront < 20)     //else if the robot needs to turn because a wall is close ahead
   {
-    previousmillis = millis();
     MODE = 3;
   }
   else if ((diff > -2) && (diff < 2))         //if difference is within tolerance
   {
     driveStraight();
   }
+}
+
+void turn()
+{
+  ui_Left_Motor_Speed = 1330;
+  ui_Right_Motor_Speed = 1670;
+  writeMotor();
+  delay(600);                                                          //delay so robot can begin turning before considering whether it is aligned with wall after turn
+  Ping();              //get new distance values
+  while (!inTolerance(distToSide1, distToSide2))
+  {
+    Ping();
+  }
+  halt();
+  delay(200);
+  Ping();
+  while (distToSide1 > (distToSide2 + 2))
+  {
+    Ping();
+    spinRight(120);
+    writeMotor();
+  }
+  Nturns++;
 }
 
 void reverse()
@@ -592,6 +602,7 @@ void IRRead()
 }
 
 void IRSensorAction(bool s1, bool s2, bool s3) {
+  Serial.println("IRSENSORACTION");
   if (s1 && s2 && s3) {
     MODE = 6;
     findStep = 1;
@@ -629,71 +640,112 @@ void IRSensorAction(bool s1, bool s2, bool s3) {
     {
       spinRight(60);
     }
-    if (findStep == 7)                                    //need condition
+    else if (findStep == 7)                                   //need condition
     {
-
+      driveStraight();
     }
-    else if (MODE != 4)                         //if no readings have occured and its not in the grabcube mode
+    else if (MODE == 4)                                                                                                   //NEED TO WRITE CONDITION OF WHAT TO DO AFTER CUBE IS COLLECTED AND NO PYRAMID IS SEEN
     {
-      Trace();                                    //if no readings of the correct pyramid have occured
+      Ping();
+      while (distToFront > 30)
+      {
+        followWall();
+      }
+      turn();
+      Nturns = 0;
+      halt();
     }
-    else                                                                                                    //NEED TO WRITE CONDITION OF WHAT TO DO AFTER CUBE IS COLLECTED AND NO PYRAMID IS SEEN
+    else
     {
-
+      Trace();
     }
   }
 }
 
-  void Trace()
+void Trace()
+{
+  Ping();
+  if (Nturns < 4)
   {
-    Ping;
-    driveStraight();
-    // pyramidSearch();
-  }
-
-
-  void pyramidSearch()
-  {
-    if (diff < -alignTolerance)         //see if back sensor is too far from wall and readjust
+    if (distToFront < 30)
     {
-      driveLeft();
+      turn();
     }
-    else if (diff > alignTolerance)
+    else if ((millis() - timeUntilTurn) > 1500)
     {
-      driveRight();
+      sweep(30);
     }
-    else if (distToFront < 20)     //else if the robot needs to turn because a wall is close ahead
+    else
     {
-      previousmillis = millis();
-      MODE = 3;
-    }
-    else if ((diff > -2) && (diff < 2))         //if difference is within tolerance
-    {
-      driveStraight();
-    }
-
-
-    if (searchMode == 4) {
-      searchMode = 0;
-    }
-    searchMode++;
-  }
-
-  void turn(int x)
-  {
-    if (x == 0)
-    {
-
+      followWall();
     }
   }
-
-  void acquirePyramid()                          //when pyramid is right infront
+  else if (Nturns < 8)                                //if pyramid not found after inital sweep of outer course
   {
-    clawUp(true);
-    delay(4000);
-    clawUp(false);
-    delay(4000);
+    if (distToFront < 60)
+    {
+      turn();
+    }
+    else if ((millis() - timeUntilTurn) > 1000)
+    {
+      sweep(60);
+    }
+    else
+    {
+      followWall();
+    }
+    
   }
+  else {
+    if (distToFront < 90)
+    {
+      turn();
+    }
+    else if ((millis() - timeUntilTurn) > 750)
+    {
+      sweep(90);
+    }
+    else
+    {
+      followWall();
+    }
+  }
+}
+
+void sweep(int dist)
+{
+  Ping();
+  if (sweepTimer == 0)
+  {
+    sweepTimer = millis();
+  }
+  if (((millis() - sweepTimer) > 1500))
+  {
+    spinRight(90);
+    if (distToSide1 < dist)
+    {
+      if (inTolerance(distToSide1, distToSide2))
+      {
+        //followWall();
+        halt();
+        timeUntilTurn = millis();
+        sweepTimer = 0;
+      }
+    }
+  }
+  else {
+    spinLeft(90);
+  }
+
+}
+
+void acquirePyramid()                          //when pyramid is right infront
+{
+  clawUp(true);
+  delay(4000);
+  clawUp(false);
+  delay(4000);
+}
 
 
 
