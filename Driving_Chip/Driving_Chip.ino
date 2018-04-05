@@ -112,7 +112,7 @@ boolean bt_Cal_Initialized = false;
 bool ON = false;
 unsigned int onTimer = 0;
 unsigned int onTimerDelay = 1000;
-int MODE = 9 ;
+int MODE = 0 ;
 ////////////// HEARTBEAT TIMER VARIABLES/////////////////////////////////////////////////////////////////////////////////////
 unsigned int heartbeatTimer = 0;
 int heartbeatDelay = 0;
@@ -233,7 +233,7 @@ void loop()
     case 1:               //mode to align robots side with wall
       {
         Ping();              //get new distance values
-        spinLeft(70);
+        spinLeft(130);
         while (!inTolerance(distToSide1, distToSide2))
         {
           Ping();
@@ -288,8 +288,7 @@ void loop()
     case 4:                                                                         //if cube has tripped contact switch
       {
         GrabCube();
-        IRRead();
-        MODE = 5;
+        MODE = 9;
         break;
       }
     case 5:                                                                           //pyramid finding
@@ -359,7 +358,7 @@ void loop()
           MODE = 11;
           gabeTimer = 0;
         }
-       // Serial.print(gabeTimer);
+        // Serial.print(gabeTimer);
         break;
 
       }
@@ -427,16 +426,16 @@ void loop()
           }
         }
         else
-          {
-            ui_Left_Motor_Speed = 1625;
-            ui_Right_Motor_Speed = 1625;
-            servo_LeftMotor.writeMicroseconds(1625);
-            servo_RightMotor.writeMicroseconds(1625);
-          }
+        {
+          ui_Left_Motor_Speed = 1625;
+          ui_Right_Motor_Speed = 1625;
+          servo_LeftMotor.writeMicroseconds(1625);
+          servo_RightMotor.writeMicroseconds(1625);
+        }
 
-          if ((hasSeen1 == true) || (hasSeen3 == true)) {
-            MODE = 12;
-          }
+        if ((hasSeen1 == true) || (hasSeen3 == true)) {
+          MODE = 12;
+        }
         /*if (s3 == true) {
           MODE = 12;
           }*/
@@ -644,23 +643,23 @@ void Ping()
 
   // Print Sensor Readings
   //#ifdef DEBUG_ULTRASONIC
-  if (MODE == 2) {
-    /*
-      Serial.print("S1Time (microseconds): ");
-      Serial.print(ul_S1_Echo_Time, DEC);
-      Serial.print(", cm: ");
-      Serial.println(ul_S1_Echo_Time / 58); //divide time by 58 to get distance in cm
+ /* if (MODE == 2) {
 
-      Serial.print("S2Time (microseconds): ");
-      Serial.print(ul_S2_Echo_Time, DEC);
-      Serial.print(", cm: ");
-      Serial.println(ul_S2_Echo_Time / 58); //divide time by 58 to get distance in cm
-    */
+    Serial.print("S1Time (microseconds): ");
+    Serial.print(ul_S1_Echo_Time, DEC);
+    Serial.print(", cm: ");
+    Serial.println(ul_S1_Echo_Time / 58); //divide time by 58 to get distance in cm
+
+    Serial.print("S2Time (microseconds): ");
+    Serial.print(ul_S2_Echo_Time, DEC);
+    Serial.print(", cm: ");
+    Serial.println(ul_S2_Echo_Time / 58); //divide time by 58 to get distance in cm
+
     Serial.print("F()Time (microseconds): ");
     Serial.print(ul_F_Echo_Time, DEC);
     Serial.print(", cm: ");
     Serial.println(ul_F_Echo_Time / 58); //divide time by 58 to get distance in cm
-  }
+  }*/
   //#endif
 
 }
