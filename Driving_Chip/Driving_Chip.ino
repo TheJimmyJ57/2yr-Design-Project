@@ -77,6 +77,8 @@ int distToFront;
 int findStep = 0;
 int searchMode = 0;
 
+int turns = 0;
+
 unsigned long ul_3_Second_timer = 0;
 unsigned long ul_Display_Time;
 unsigned long ul_Calibration_Time;
@@ -110,7 +112,7 @@ boolean bt_Cal_Initialized = false;
 bool ON = false;
 unsigned int onTimer = 0;
 unsigned int onTimerDelay = 1000;
-int MODE = 0 ;
+int MODE = 9 ;
 ////////////// HEARTBEAT TIMER VARIABLES/////////////////////////////////////////////////////////////////////////////////////
 unsigned int heartbeatTimer = 0;
 int heartbeatDelay = 0;
@@ -122,6 +124,7 @@ bool switchTripped = false;
 int Nturns = 0;
 double timeUntilTurn = 0;
 double sweepTimer = 0;
+double gabeTimer = 0;
 ///////////// ALIGNMENT VARIABLES ////////////////////////////////////////////////////////////////////////
 int alignTolerance = 1;
 int spinTolerance = 3;
@@ -136,6 +139,9 @@ int ClawSwivelOpen = 175;
 int ClawSwivelClosed = 45;
 bool ArmUp = true;
 bool WinchUp = true;
+bool s1, s2, s3;
+bool hasSeen1 = false;
+bool hasSeen3 = false;
 
 void GrabCube();
 
@@ -189,14 +195,25 @@ void setup() {
   ui_Left_Motor_Speed = 1650;
   ui_Right_Motor_Speed = 1650;
 
-  clawUp(false);
-  clawSwivelUp(false);
+  clawUp(true);
+  clawSwivelUp(true);
+  delay(1000);
+
 }
 
 void acquirePyramid();
 
 void loop()
 {
+  IRRead();
+  if (s1 == true) {
+    Serial.print("SENSOR1");
+    hasSeen1 = true;
+  }
+  if (s3 == true) {
+    Serial.print("SENSOR1");
+    hasSeen3 = true;
+  }
   digitalWrite(13, HIGH);
   switch (MODE) {
     case 0:                 //mode to find wall
@@ -287,7 +304,160 @@ void loop()
         break;
       }
 
+    case 7:                              // follow wall
+      {
+        alignTolerance = 4; // reducing tolerance
+        Ping();
+        if (distToFront < (30 + (30 * (turns / 4)))) //else if the robot needs to turn because a wall is close ahead
+        {
+          halt();
+          delay(200);
+          //Ping();
+          //while (distToFront < 15)
+          //{
+          // Ping();
+          //reverse();
+          //writeMotor();
+          //}
+          MODE = 8;
+        }
+        else if (diff < -alignTolerance)         //see if back sensor is too far from wall and readjust
+        {
+          driveLeft();
+        }
+        else if (diff > alignTolerance)
+        {
+          driveRight();
+        }
+        else if ((diff > -2) && (diff < 2))         //if difference is within tolerance
+        {
+          driveStraight();
+        }
+        break;
+      }
+    case 8:                                 //begin turning robot
+      {
+        turn();
+        MODE = 7;
+        turns++;
+        break;
+      }
+    case 9:                                 //sweep
+      {
+        ui_Left_Motor_Speed = 1625;
+        ui_Right_Motor_Speed = 1375;
+        servo_LeftMotor.writeMicroseconds(1625);
+        servo_RightMotor.writeMicroseconds(1375);
+
+        IRRead();
+        gabeTimer++;
+        if (gabeTimer > 2000) {
+          MODE = 10;
+          gabeTimer = 0;
+        }
+        if (s2 == true) {
+          MODE = 11;
+          gabeTimer = 0;
+        }
+       // Serial.print(gabeTimer);
+        break;
+
+      }
+    case 10:                                 //sweep
+      {
+        ui_Left_Motor_Speed = 1720;
+        ui_Right_Motor_Speed = 1720;
+        servo_LeftMotor.writeMicroseconds(1720);
+        servo_RightMotor.writeMicroseconds(1720);
+        gabeTimer++;
+
+        Ping();
+        if ((distToFront < 30) || (distToSide1 < 30)) {
+          ui_Left_Motor_Speed = 1720;
+          ui_Right_Motor_Speed = 1280;
+          servo_LeftMotor.writeMicroseconds(1720);
+          servo_RightMotor.writeMicroseconds(1280);
+          gabeTimer = 0;
+          Serial.print("TURNING BITCH FACE ");
+        }
+
+        if (gabeTimer > 300) {
+          MODE = 9;
+          gabeTimer = 0;
+        }
+        IRRead();
+        if (s2 == true) {
+          MODE = 11;
+          gabeTimer = 0;
+        }
+        //Serial.print(gabeTimer);
+        break;
+      }
+
+    case 11:                                 //sweep
+      {
+        /*servo_LeftMotor.writeMicroseconds(1720);
+          servo_RightMotor.writeMicroseconds(1280);
+          delay(100);
+          servo_LeftMotor.writeMicroseconds(1280);
+          servo_RightMotor.writeMicroseconds(1720);
+          delay(100);
+        */
+
+
+
+        IRRead();
+        if (s2 == false) {
+
+          ui_Left_Motor_Speed = 1500;
+          ui_Right_Motor_Speed = 1500;
+          servo_LeftMotor.writeMicroseconds(1500);
+          servo_RightMotor.writeMicroseconds(1500);
+
+          gabeTimer++;
+          if (gabeTimer > 600) {
+            ui_Left_Motor_Speed = 1400;
+            ui_Right_Motor_Speed = 1600;
+            servo_LeftMotor.writeMicroseconds(1400);
+            servo_RightMotor.writeMicroseconds(1600);
+          }
+          if (gabeTimer > 1000) {
+            gabeTimer = 0;
+            MODE = 9;
+          }
+        }
+        else
+          {
+            ui_Left_Motor_Speed = 1625;
+            ui_Right_Motor_Speed = 1625;
+            servo_LeftMotor.writeMicroseconds(1625);
+            servo_RightMotor.writeMicroseconds(1625);
+          }
+
+          if ((hasSeen1 == true) || (hasSeen3 == true)) {
+            MODE = 12;
+          }
+        /*if (s3 == true) {
+          MODE = 12;
+          }*/
+        break;
+      }
+
+    case 12 : {
+        ui_Left_Motor_Speed = 1500;
+        ui_Right_Motor_Speed = 1500;
+        servo_LeftMotor.writeMicroseconds(1500);
+        servo_RightMotor.writeMicroseconds(1500);
+        break;
+      }
+
   }
+
+
+
+
+
+
 
   servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
   servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
@@ -297,7 +467,7 @@ void loop()
     cubeDetection();
   }
 
-  //Serial.println(MODE);
+  Serial.println(MODE);
 }
 
 void cubeDetection()
@@ -340,10 +510,6 @@ void followWall()
   else if (diff > alignTolerance)
   {
     driveRight();
-  }
-  else if (distToFront < 20)     //else if the robot needs to turn because a wall is close ahead
-  {
-    MODE = 3;
   }
   else if ((diff > -2) && (diff < 2))         //if difference is within tolerance
   {
@@ -573,7 +739,7 @@ void armUp(bool Up)
 
 void IRRead()
 {
-  bool s1, s2, s3;
+
   if (digitalRead(ci_IR1) == HIGH)
   {
     s1 = true;
@@ -598,7 +764,7 @@ void IRRead()
   {
     s3 = false;
   }
-  IRSensorAction(s1, s2, s3);
+  // IRSensorAction(s1, s2, s3);
 }
 
 void IRSensorAction(bool s1, bool s2, bool s3) {
@@ -664,7 +830,7 @@ void IRSensorAction(bool s1, bool s2, bool s3) {
 
 void Trace()
 {
-  if(timeUntilTurn = 0)
+  if (timeUntilTurn = 0)
   {
     timeUntilTurn = millis();
   }
@@ -700,7 +866,7 @@ void Trace()
     {
       followWall();
     }
-    
+
   }
   else {
     if (distToFront < 90)
