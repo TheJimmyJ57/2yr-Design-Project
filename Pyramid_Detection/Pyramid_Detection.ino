@@ -1,18 +1,12 @@
-/*
-  Software serial MSE 2202 IR tester
+//libary to allow serial communication on digital pins
+#include <SoftwareSerial.h>   
 
-  The circuit:
-
-  RX is digital pin 7 (connect to TX of other device)
-  TX is digital pin 11 (connect to RX of other device)
-
-*/
-
-#include <SoftwareSerial.h>
-
+//softwareserial objects
 SoftwareSerial IR1(A1, 11); // RX, TX
-SoftwareSerial IR2(A2, 11); // RX, TX
-SoftwareSerial IR3(A3, 11); // RX, TX
+SoftwareSerial IR2(A2, 11); 
+SoftwareSerial IR3(A3, 11); 
+
+//variables
 int  sensor_select = 0;
 unsigned int timer = 0;
 int Timer = 0;
@@ -20,12 +14,14 @@ int resetTimer = 0;
 int pin_out1 = 0;
 int pin_out2 = 0;
 int pin_out3 = 0;
+
+//output pins
 const int SwitchPin = 12;
 const int IR1_pin = 2;
 const int IR2_pin = 3;
 const int IR3_pin = 4;
 
-
+//character values
 char char1;
 char char2;
 
@@ -43,23 +39,23 @@ void setup() {
   IR1.begin(2400);
   IR2.begin(2400);
   IR3.begin(2400);
-  //mySerial.println("Hello, world?");
 
   pinMode(12, INPUT);
 
+  //IR sensor inputs
   pinMode(A1, INPUT);
   pinMode(A3, INPUT);
   pinMode(A2, INPUT);
 
+  //digital pins to communcate to second microcontroller
   pinMode(IR1_pin, OUTPUT);
   pinMode(IR2_pin, OUTPUT);
   pinMode(IR3_pin, OUTPUT);
 }
 
+void loop() { 
 
-
-void loop() { // run over and over
-
+  //switch to tell the IR sensors to accept A&E or O&I as correct
   if (digitalRead(SwitchPin) == HIGH)
   {
     char1 = 'A';
@@ -71,14 +67,20 @@ void loop() { // run over and over
     char2 = 'I';
   }
 
-
+  //each case reads values of one IR
   switch (sensor_select) {
     case 0: {
+      
+        //listen to first IR to read data (if any)
+        
         IR1.listen();
         if (IR1.available())
         {
           char var = IR1.read();
           if ((var == char1) || (var == char2)) {
+            
+            //if correct character is found by left IR, hold in pin_out1
+            
             pin_out1 = 1;
           }
           Serial.print("Sensor 1: ");
@@ -118,6 +120,9 @@ void loop() { // run over and over
   }
 
   Timer ++;
+
+  //timer to cycle IR that is being listened to
+  
   if (Timer > 2500) {
     Timer = 0;
     sensor_select++;
@@ -130,6 +135,8 @@ void loop() { // run over and over
   IRSensorOutput(pin_out1, pin_out2, pin_out3);
 }
 
+
+//set each pin as LOW using these variables at the start of each listening
 void TimerPinStuff(int select) {
 
   if (select == 0)
@@ -148,6 +155,8 @@ void TimerPinStuff(int select) {
   }
 }
 
+
+//sets respective pins to high if the corresponding sensor saw the pyramid
 void IRSensorOutput(bool s1, bool s2, bool s3) {
   if (millis() - resetTimer > 500) {
     if (s1 && s2 && s3) {
